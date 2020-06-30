@@ -1,2 +1,7 @@
-from __future__ import print_function
-from __future__ import division
+'''
+(c) University of Liverpool 2020
+
+All rights reserved.
+
+@author: neilswainston
+'''

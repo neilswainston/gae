@@ -1,9 +1,17 @@
-from setuptools import setup
-from setuptools import find_packages
+'''
+(c) University of Liverpool 2020
+
+All rights reserved.
+
+@author: neilswainston
+'''
+from setuptools import find_packages, setup
+
 
 setup(name='gae',
       version='0.0.1',
-      description='Implementation of (Variational) Graph Auto-Encoders in Tensorflow',
+      description='Implementation of (Variational) Graph Auto-Encoders in '
+      'Tensorflow',
       author='Thomas Kipf',
       author_email='thomas.kipf@gmail.com',
       url='https://tkipf.github.io',
