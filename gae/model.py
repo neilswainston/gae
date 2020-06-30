@@ -43,11 +43,11 @@ class Model():
 
     def build(self):
         ''' Wrapper for _build() '''
-        with tf.variable_scope(self.name):
+        with tf.compat.v1.variable_scope(self.name):
             self._build()
 
-        variables = tf.get_collection(
-            tf.GraphKeys.GLOBAL_VARIABLES, scope=self.name)
+        variables = tf.compat.v1.get_collection(
+            tf.compat.v1.GraphKeys.GLOBAL_VARIABLES, scope=self.name)
 
         self.vars = {var.name: var for var in variables}
 
@@ -158,6 +158,6 @@ class GCNModelVAE(Model):
                 [self.n_samples, self.hidden2]) * tf.exp(self.z_log_std)
 
         self.reconstructions = InnerProductDecoder(
-            input_dim=FLAGS.hidden2,
+            input_dim=self.hidden2,
             act=lambda x: x,
             logging=self.logging)(self.z)

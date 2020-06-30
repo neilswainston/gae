@@ -22,9 +22,9 @@ class OptimizerAE():
 
         self.cost = norm * tf.reduce_mean(
             tf.nn.weighted_cross_entropy_with_logits(
-                logits=preds_sub, targets=labels_sub, pos_weight=pos_weight))
+                logits=preds_sub, labels=labels_sub, pos_weight=pos_weight))
 
-        self.optimizer = tf.train.AdamOptimizer(
+        self.optimizer = tf.compat.v1.train.AdamOptimizer(
             learning_rate=learning_rate)  # Adam Optimizer
 
         self.opt_op = self.optimizer.minimize(self.cost)
@@ -50,7 +50,7 @@ class OptimizerVAE():
             tf.nn.weighted_cross_entropy_with_logits(
                 logits=preds_sub, targets=labels_sub, pos_weight=pos_weight))
 
-        self.optimizer = tf.train.AdamOptimizer(
+        self.optimizer = tf.compat.v1.train.AdamOptimizer(
             learning_rate=learning_rate)  # Adam Optimizer
 
         # Latent loss

@@ -60,10 +60,10 @@ def train(model_str='gcn_ae', dataset_str='cora', use_features=True,
 
     # Define placeholders
     placeholders = {
-        'features': tf.sparse_placeholder(tf.float32),
-        'adj': tf.sparse_placeholder(tf.float32),
-        'adj_orig': tf.sparse_placeholder(tf.float32),
-        'dropout': tf.placeholder_with_default(0., shape=())
+        'features': tf.compat.v1.sparse_placeholder(tf.float32),
+        'adj': tf.compat.v1.sparse_placeholder(tf.float32),
+        'adj_orig': tf.compat.v1.sparse_placeholder(tf.float32),
+        'dropout': tf.compat.v1.placeholder_with_default(0., shape=())
     }
 
     num_nodes = adj.shape[0]
@@ -91,7 +91,7 @@ def train(model_str='gcn_ae', dataset_str='cora', use_features=True,
         if model_str == 'gcn_ae':
             opt = OptimizerAE(preds=model.reconstructions,
                               labels=tf.reshape(
-                                  tf.sparse_tensor_to_dense(
+                                  tf.sparse.to_dense(
                                       placeholders['adj_orig'],
                                       validate_indices=False), [-1]),
                               pos_weight=pos_weight,
@@ -100,7 +100,7 @@ def train(model_str='gcn_ae', dataset_str='cora', use_features=True,
         elif model_str == 'gcn_vae':
             opt = OptimizerVAE(preds=model.reconstructions,
                                labels=tf.reshape(
-                                   tf.sparse_tensor_to_dense(
+                                   tf.sparse.to_dense(
                                        placeholders['adj_orig'],
                                        validate_indices=False), [-1]),
                                model=model, num_nodes=num_nodes,
@@ -109,8 +109,8 @@ def train(model_str='gcn_ae', dataset_str='cora', use_features=True,
                                learning_rate=learning_rate)
 
     # Initialize session
-    sess = tf.Session()
-    sess.run(tf.global_variables_initializer())
+    sess = tf.compat.v1.Session()
+    sess.run(tf.compat.v1.global_variables_initializer())
 
     val_roc_score = []
 
