@@ -99,7 +99,6 @@ class GCNModelAE(Model):
         self.z_mean = self.embeddings
 
         self.reconstructions = InnerProductDecoder(
-            input_dim=self.hidden2,
             act=lambda x: x,
             logging=self.logging)(self.embeddings)
 
@@ -158,6 +157,5 @@ class GCNModelVAE(Model):
                 [self.n_samples, self.hidden2]) * tf.exp(self.z_log_std)
 
         self.reconstructions = InnerProductDecoder(
-            input_dim=self.hidden2,
             act=lambda x: x,
             logging=self.logging)(self.z)
