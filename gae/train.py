@@ -29,27 +29,14 @@ import tensorflow as tf
 os.environ['CUDA_VISIBLE_DEVICES'] = ''
 
 
-# Settings
-flags = tf.app.flags
-FLAGS = flags.FLAGS
-
-flags.DEFINE_float('learning_rate', 0.01, 'Initial learning rate.')
-flags.DEFINE_integer('epochs', 200, 'Number of epochs to train.')
-flags.DEFINE_integer('hidden1', 32, 'Number of units in hidden layer 1.')
-flags.DEFINE_integer('hidden2', 16, 'Number of units in hidden layer 2.')
-flags.DEFINE_float('weight_decay', 0.,
-                   'Weight for L2 loss on embedding matrix.')
-flags.DEFINE_float('dropout', 0., 'Dropout rate (1 - keep probability).')
-
-flags.DEFINE_string('model', 'gcn_ae', 'Model string.')
-flags.DEFINE_string('dataset', 'cora', 'Dataset string.')
-flags.DEFINE_integer('features', 1, 'Whether to use features (1) or not (0).')
-
-
 def main():
     '''main method.'''
-    model_str = FLAGS.model
-    dataset_str = FLAGS.dataset
+    train()
+
+
+def train(model_str='gcn_ae', dataset_str='cora', use_features=True,
+          epochs=200, dropout=0.0, hidden1=32, hidden2=16, learning_rate=0.01):
+    '''train.'''
 
     # Load data
     adj, features = load_data(dataset_str)
@@ -65,7 +52,7 @@ def main():
         test_edges_false = mask_test_edges(adj)
     adj = adj_train
 
-    if FLAGS.features == 0:
+    if not use_features:
         features = sp.identity(features.shape[0])  # featureless
 
     # Some preprocessing
@@ -88,10 +75,12 @@ def main():
     # Create model
     model = None
     if model_str == 'gcn_ae':
-        model = GCNModelAE(placeholders, num_features, features_nonzero)
+        model = GCNModelAE(placeholders, num_features, features_nonzero,
+                           hidden1=hidden1, hidden2=hidden2)
     elif model_str == 'gcn_vae':
         model = GCNModelVAE(placeholders, num_features,
-                            num_nodes, features_nonzero)
+                            num_nodes, features_nonzero,
+                            hidden1=hidden1, hidden2=hidden2)
 
     pos_weight = float(adj.shape[0] * adj.shape[0] - adj.sum()) / adj.sum()
     norm = adj.shape[0] * adj.shape[0] / \
@@ -106,7 +95,8 @@ def main():
                                       placeholders['adj_orig'],
                                       validate_indices=False), [-1]),
                               pos_weight=pos_weight,
-                              norm=norm)
+                              norm=norm,
+                              learning_rate=learning_rate)
         elif model_str == 'gcn_vae':
             opt = OptimizerVAE(preds=model.reconstructions,
                                labels=tf.reshape(
@@ -115,7 +105,8 @@ def main():
                                        validate_indices=False), [-1]),
                                model=model, num_nodes=num_nodes,
                                pos_weight=pos_weight,
-                               norm=norm)
+                               norm=norm,
+                               learning_rate=learning_rate)
 
     # Initialize session
     sess = tf.Session()
@@ -127,13 +118,15 @@ def main():
     adj_label = sparse_to_tuple(adj_label)
 
     # Train model
-    for epoch in range(FLAGS.epochs):
-
+    for epoch in range(epochs):
         t = time.time()
+
         # Construct feed dictionary
         feed_dict = construct_feed_dict(
             adj_norm, adj_label, features, placeholders)
-        feed_dict.update({placeholders['dropout']: FLAGS.dropout})
+
+        feed_dict.update({placeholders['dropout']: dropout})
+
         # Run single weight update
         outs = sess.run([opt.opt_op, opt.cost, opt.accuracy],
                         feed_dict=feed_dict)
@@ -142,7 +135,7 @@ def main():
         avg_cost = outs[1]
         avg_accuracy = outs[2]
 
-        roc_curr, ap_curr = get_roc_score(
+        roc_curr, ap_curr = _get_roc_score(
             feed_dict, placeholders, sess, model, adj_orig,
             val_edges, val_edges_false)
 
@@ -157,7 +150,7 @@ def main():
 
     print('Optimization Finished!')
 
-    roc_score, ap_score = get_roc_score(
+    roc_score, ap_score = _get_roc_score(
         feed_dict, placeholders, sess, model, adj_orig,
         test_edges, test_edges_false)
 
@@ -165,8 +158,8 @@ def main():
     print('Test AP score: ' + str(ap_score))
 
 
-def get_roc_score(feed_dict, placeholders, sess, model, adj_orig,
-                  edges_pos, edges_neg, emb=None):
+def _get_roc_score(feed_dict, placeholders, sess, model, adj_orig,
+                   edges_pos, edges_neg, emb=None):
     '''Get ROC score.'''
     if emb is None:
         feed_dict.update({placeholders['dropout']: 0})

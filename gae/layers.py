@@ -15,9 +15,6 @@ from gae.initializations import weight_variable_glorot
 import tensorflow as tf
 
 
-flags = tf.app.flags
-FLAGS = flags.FLAGS
-
 # global unique layer ID dictionary for layer name assignment
 _LAYER_UIDS = {}
 
