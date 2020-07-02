@@ -30,17 +30,6 @@ def get_layer_uid(layer_name=''):
     return _LAYER_UIDS[layer_name]
 
 
-def dropout_sparse(x, keep_prob, num_nonzero_elems):
-    '''Dropout for sparse tensors. Currently fails for very large sparse
-    tensors (>1M elements)'''
-    noise_shape = [num_nonzero_elems]
-    random_tensor = keep_prob
-    random_tensor += tf.random.uniform(noise_shape)
-    dropout_mask = tf.cast(tf.floor(random_tensor), dtype=tf.bool)
-    pre_out = tf.sparse.retain(x, dropout_mask)
-    return pre_out * (1. / keep_prob)
-
-
 class Layer():
     '''Base layer class. Defines basic API for all layer objects.
 
@@ -53,7 +42,7 @@ class Layer():
         __call__(inputs): Wrapper for _call()
     '''
 
-    def __init__(self, **kwargs):
+    def __init__(self, dropout, act, **kwargs):
         allowed_kwargs = {'name', 'logging'}
 
         for kwarg in kwargs:
@@ -64,10 +53,12 @@ class Layer():
         if not name:
             layer = self.__class__.__name__.lower()
             name = layer + '_' + str(get_layer_uid(layer))
+
+        self.act = act
+        self.dropout = dropout
         self.name = name
         self.vars = {}
-        logging = kwargs.get('logging', False)
-        self.logging = logging
+        self.logging = kwargs.get('logging', False)
         self.issparse = False
 
     def _call(self, inputs):
@@ -76,8 +67,7 @@ class Layer():
 
     def __call__(self, inputs):
         with tf.name_scope(self.name):
-            outputs = self._call(inputs)
-            return outputs
+            return self._call(inputs)
 
 
 class GraphConvolution(Layer):
@@ -86,24 +76,20 @@ class GraphConvolution(Layer):
 
     def __init__(self, input_dim, output_dim, adj, dropout=0., act=tf.nn.relu,
                  **kwargs):
-        super(GraphConvolution, self).__init__(**kwargs)
+        super(GraphConvolution, self).__init__(dropout, act, **kwargs)
 
         with tf.compat.v1.variable_scope(self.name + '_vars'):
             self.vars['weights'] = weight_variable_glorot(
                 input_dim, output_dim, name='weights')
 
-        self.dropout = dropout
         self.adj = adj
-        self.act = act
 
     def _call(self, inputs):
         '''Call.'''
-        x = inputs
-        x = tf.nn.dropout(x, rate=self.dropout)
+        x = tf.nn.dropout(inputs, rate=self.dropout)
         x = tf.matmul(x, self.vars['weights'])
         x = tf.sparse.sparse_dense_matmul(self.adj, x)
-        outputs = self.act(x)
-        return outputs
+        return self.act(x)
 
 
 class GraphConvolutionSparse(Layer):
@@ -111,33 +97,30 @@ class GraphConvolutionSparse(Layer):
 
     def __init__(self, input_dim, output_dim, adj, features_nonzero,
                  dropout=0., act=tf.nn.relu, **kwargs):
-        super(GraphConvolutionSparse, self).__init__(**kwargs)
+        super(GraphConvolutionSparse, self).__init__(dropout, act, **kwargs)
 
         with tf.compat.v1.variable_scope(self.name + '_vars'):
             self.vars['weights'] = weight_variable_glorot(
                 input_dim, output_dim, name='weights')
-        self.dropout = dropout
+
         self.adj = adj
-        self.act = act
+
         self.issparse = True
         self.features_nonzero = features_nonzero
 
     def _call(self, inputs):
-        x = inputs
-        x = dropout_sparse(x, 1 - self.dropout, self.features_nonzero)
+        '''Call.'''
+        x = _dropout_sparse(inputs, 1 - self.dropout, self.features_nonzero)
         x = tf.sparse.sparse_dense_matmul(x, self.vars['weights'])
         x = tf.sparse.sparse_dense_matmul(self.adj, x)
-        outputs = self.act(x)
-        return outputs
+        return self.act(x)
 
 
 class InnerProductDecoder(Layer):
     '''Decoder model layer for link prediction.'''
 
     def __init__(self, dropout=0.0, act=tf.nn.sigmoid, **kwargs):
-        super(InnerProductDecoder, self).__init__(**kwargs)
-        self.dropout = dropout
-        self.act = act
+        super(InnerProductDecoder, self).__init__(dropout, act, **kwargs)
 
     def _call(self, inputs):
         inputs = tf.nn.dropout(inputs, rate=self.dropout)
@@ -146,3 +129,13 @@ class InnerProductDecoder(Layer):
         x = tf.reshape(x, [-1])
         outputs = self.act(x)
         return outputs
+
+
+def _dropout_sparse(x, keep_prob, num_nonzero_elems):
+    '''Dropout for sparse tensors. Currently fails for very large sparse
+    tensors (>1M elements)'''
+    noise_shape = [num_nonzero_elems]
+    random_tensor = keep_prob + tf.random.uniform(noise_shape)
+    dropout_mask = tf.cast(tf.floor(random_tensor), dtype=tf.bool)
+    pre_out = tf.sparse.retain(x, dropout_mask)
+    return pre_out * (1.0 / keep_prob)

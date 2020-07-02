@@ -72,8 +72,9 @@ def train(model_str='gcn_ae', dataset_str='cora', use_features=True,
     num_features = features[2][1]
     features_nonzero = features[1].shape[0]
 
-    # Create model
+    # Create model:
     model = None
+
     if model_str == 'gcn_ae':
         model = GCNModelAE(placeholders, num_features, features_nonzero,
                            hidden1=hidden1, hidden2=hidden2)
@@ -82,11 +83,11 @@ def train(model_str='gcn_ae', dataset_str='cora', use_features=True,
                             num_nodes, features_nonzero,
                             hidden1=hidden1, hidden2=hidden2)
 
+    # Optimizer:
     pos_weight = float(adj.shape[0] * adj.shape[0] - adj.sum()) / adj.sum()
     norm = adj.shape[0] * adj.shape[0] / \
         float((adj.shape[0] * adj.shape[0] - adj.sum()) * 2)
 
-    # Optimizer
     with tf.name_scope('optimizer'):
         if model_str == 'gcn_ae':
             opt = OptimizerAE(preds=model.reconstructions,
@@ -108,7 +109,7 @@ def train(model_str='gcn_ae', dataset_str='cora', use_features=True,
                                norm=norm,
                                learning_rate=learning_rate)
 
-    # Initialize session
+    # Initialize session:
     sess = tf.compat.v1.Session()
     sess.run(tf.compat.v1.global_variables_initializer())
 
@@ -117,11 +118,11 @@ def train(model_str='gcn_ae', dataset_str='cora', use_features=True,
     adj_label = adj_train + sp.eye(adj_train.shape[0])
     adj_label = sparse_to_tuple(adj_label)
 
-    # Train model
+    # Train model:
     for epoch in range(epochs):
         t = time.time()
 
-        # Construct feed dictionary
+        # Construct feed dictionary:
         feed_dict = construct_feed_dict(
             adj_norm, adj_label, features, placeholders)
 
@@ -141,14 +142,12 @@ def train(model_str='gcn_ae', dataset_str='cora', use_features=True,
 
         val_roc_score.append(roc_curr)
 
-        print('Epoch:', '%04d' % (epoch + 1),
+        print('Epoch:', '%05d' % (epoch + 1),
               'train_loss=', '{:.5f}'.format(avg_cost),
               'train_acc=', '{:.5f}'.format(avg_accuracy),
               'val_roc=', '{:.5f}'.format(val_roc_score[-1]),
               'val_ap=', '{:.5f}'.format(ap_curr),
               'time=', '{:.5f}'.format(time.time() - t))
-
-    print('Optimization Finished!')
 
     roc_score, ap_score = _get_roc_score(
         feed_dict, placeholders, sess, model, adj_orig,
@@ -165,7 +164,7 @@ def _get_roc_score(feed_dict, placeholders, sess, model, adj_orig,
         feed_dict.update({placeholders['dropout']: 0})
         emb = sess.run(model.z_mean, feed_dict=feed_dict)
 
-    def sigmoid(x):
+    def _sigmoid(x):
         return 1 / (1 + np.exp(-x))
 
     # Predict on test set of edges
@@ -173,13 +172,13 @@ def _get_roc_score(feed_dict, placeholders, sess, model, adj_orig,
     preds = []
     pos = []
     for e in edges_pos:
-        preds.append(sigmoid(adj_rec[e[0], e[1]]))
+        preds.append(_sigmoid(adj_rec[e[0], e[1]]))
         pos.append(adj_orig[e[0], e[1]])
 
     preds_neg = []
     neg = []
     for e in edges_neg:
-        preds_neg.append(sigmoid(adj_rec[e[0], e[1]]))
+        preds_neg.append(_sigmoid(adj_rec[e[0], e[1]]))
         neg.append(adj_orig[e[0], e[1]])
 
     preds_all = np.hstack([preds, preds_neg])

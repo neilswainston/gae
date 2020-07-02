@@ -17,6 +17,7 @@ def sparse_to_tuple(sparse_mx):
     '''Sparse to tuple.'''
     if not sp.isspmatrix_coo(sparse_mx):
         sparse_mx = sparse_mx.tocoo()
+
     coords = np.vstack((sparse_mx.row, sparse_mx.col)).transpose()
     values = sparse_mx.data
     shape = sparse_mx.shape

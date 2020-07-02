@@ -34,7 +34,6 @@ class Model():
 
         self.vars = {}
 
-        self.hidden1 = None
         self.z_mean = None
         self.reconstructions = None
 
