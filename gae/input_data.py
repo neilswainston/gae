@@ -19,7 +19,7 @@ def load_data(dataset):
     objects = []
 
     for name in ['x', 'tx', 'allx', 'graph']:
-        with open('data/ind.{}.{}'.format(dataset, name), 'rb') as fle:
+        with open('../data/ind.{}.{}'.format(dataset, name), 'rb') as fle:
             objects.append(pkl.load(fle, encoding='latin1'))
 
     x, tx, allx, graph = tuple(objects)
