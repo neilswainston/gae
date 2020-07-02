@@ -29,17 +29,9 @@ import tensorflow as tf
 os.environ['CUDA_VISIBLE_DEVICES'] = ''
 
 
-def main():
-    '''main method.'''
-    train()
-
-
-def train(model_str='gcn_ae', dataset_str='cora', use_features=True,
+def train(adj, features, is_ae=True, use_features=True,
           epochs=200, dropout=0.0, hidden1=32, hidden2=16, learning_rate=0.01):
     '''train.'''
-
-    # Load data
-    adj, features = load_data(dataset_str)
 
     # Store original adjacency matrix (without diagonal entries) for later
     adj_orig = adj
@@ -75,10 +67,10 @@ def train(model_str='gcn_ae', dataset_str='cora', use_features=True,
     # Create model:
     model = None
 
-    if model_str == 'gcn_ae':
+    if is_ae:
         model = GCNModelAE(placeholders, num_features, features_nonzero,
                            hidden1=hidden1, hidden2=hidden2)
-    elif model_str == 'gcn_vae':
+    else:
         model = GCNModelVAE(placeholders, num_features,
                             num_nodes, features_nonzero,
                             hidden1=hidden1, hidden2=hidden2)
@@ -89,7 +81,7 @@ def train(model_str='gcn_ae', dataset_str='cora', use_features=True,
         float((adj.shape[0] * adj.shape[0] - adj.sum()) * 2)
 
     with tf.name_scope('optimizer'):
-        if model_str == 'gcn_ae':
+        if is_ae:
             opt = OptimizerAE(preds=model.reconstructions,
                               labels=tf.reshape(
                                   tf.sparse.to_dense(
@@ -98,7 +90,7 @@ def train(model_str='gcn_ae', dataset_str='cora', use_features=True,
                               pos_weight=pos_weight,
                               norm=norm,
                               learning_rate=learning_rate)
-        elif model_str == 'gcn_vae':
+        else:
             opt = OptimizerVAE(preds=model.reconstructions,
                                labels=tf.reshape(
                                    tf.sparse.to_dense(
@@ -187,6 +179,16 @@ def _get_roc_score(feed_dict, placeholders, sess, model, adj_orig,
     ap_score = average_precision_score(labels_all, preds_all)
 
     return roc_score, ap_score
+
+
+def main():
+    '''main method.'''
+
+    # Load data:
+    adj, features = load_data('cora')
+
+    # Train:
+    train(adj, features)
 
 
 if __name__ == '__main__':
