@@ -14,7 +14,7 @@ All rights reserved.
 import tensorflow as tf
 
 
-def get_opt(model, adj, adj_orig, num_nodes, learning_rate, is_ae):
+def get_opt(model, adj, adj_orig, learning_rate, is_ae):
     '''Get optimiser.'''
     pos_weight = float(adj.shape[0] * adj.shape[0] - adj.sum()) / adj.sum()
 
@@ -36,7 +36,7 @@ def get_opt(model, adj, adj_orig, num_nodes, learning_rate, is_ae):
         # else:
         return OptimizerVAE(preds=model.reconstructions,
                             labels=labels,
-                            model=model, num_nodes=num_nodes,
+                            model=model, num_nodes=adj.shape[0],
                             pos_weight=pos_weight,
                             norm=norm,
                             learning_rate=learning_rate)

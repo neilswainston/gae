@@ -13,7 +13,7 @@ import sys
 from rdkit import Chem
 import scipy
 
-from gae import train
+from gae.tf import train
 import numpy as np
 import pandas as pd
 
@@ -52,7 +52,7 @@ def main(args):
     adj, features = _load_data(args[0])
 
     # Train:
-    train.train(adj, features, epochs=1000)
+    train.train(adj, features, epochs=10000)
 
 
 if __name__ == '__main__':

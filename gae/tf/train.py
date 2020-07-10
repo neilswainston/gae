@@ -31,11 +31,12 @@ os.environ['CUDA_VISIBLE_DEVICES'] = ''
 
 
 def train(adj, features, is_ae=True, use_features=True,
-          epochs=200, dropout=0.0, hidden1=32, hidden2=16, learning_rate=0.01):
+          epochs=200, dropout=0.0, hidden1=256, hidden2=128,
+          learning_rate=0.01):
     '''train.'''
 
     # Adjacency:
-    adj, adj_orig, adj_norm, num_nodes = preprocess_adj(adj)
+    adj_norm = preprocess_adj(adj)
 
     # Features:
     features, num_features, num_nonzero_feats = \
@@ -51,11 +52,10 @@ def train(adj, features, is_ae=True, use_features=True,
 
     # Create model:
     model = get_model(placeholders, num_features, num_nonzero_feats,
-                      hidden1, hidden2, num_nodes, is_ae)
+                      hidden1, hidden2, adj.shape[0], is_ae)
 
     # Optimizer:
-    opt = get_opt(model, adj, placeholders['adj_orig'], num_nodes,
-                  learning_rate, is_ae)
+    opt = get_opt(model, adj, placeholders['adj_orig'], learning_rate, is_ae)
 
     # Initialize session:
     sess = tf.compat.v1.Session()
@@ -89,7 +89,7 @@ def train(adj, features, is_ae=True, use_features=True,
               'time=', '{:.5f}'.format(time.time() - t))
 
     adj_rec = _get_adj_rec(sess, model, feed_dict)
-    roc_score, ap_score = _get_roc_score(adj_orig, adj_rec)
+    roc_score, ap_score = _get_roc_score(adj, adj_rec)
 
     print('Test ROC score: ' + str(roc_score))
     print('Test AP score: ' + str(ap_score))
@@ -98,13 +98,15 @@ def train(adj, features, is_ae=True, use_features=True,
 def _get_adj_rec(sess, model, feed_dict):
     '''Get reconstructed adjacency matrix.'''
     emb = sess.run(model.z_mean, feed_dict=feed_dict)
-    return expit(np.dot(emb, emb.T))
+    adj_rec = expit(np.dot(emb, emb.T))
+    return (adj_rec + 0.5).astype(np.int)
 
 
-def _get_roc_score(adj_orig, adj_rec):
+def _get_roc_score(adj, adj_rec):
     '''Get ROC score.'''
-    return roc_auc_score(adj_orig, adj_rec), \
-        average_precision_score(adj_orig, adj_rec)
+    adj = adj.toarray().flatten()
+    adj_rec = adj_rec.toarray().flatten()
+    return roc_auc_score(adj, adj_rec), average_precision_score(adj, adj)
 
 
 def main():
