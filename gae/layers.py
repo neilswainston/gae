@@ -71,8 +71,7 @@ class Layer():
 
 
 class GraphConvolution(Layer):
-    '''Basic graph convolution layer for undirected graph without edge
-    labels.'''
+    '''Graph convolution layer for undirected graph without edge labels.'''
 
     def __init__(self, input_dim, output_dim, adj, dropout=0., act=tf.nn.relu,
                  **kwargs):
@@ -92,20 +91,14 @@ class GraphConvolution(Layer):
         return self.act(x)
 
 
-class GraphConvolutionSparse(Layer):
+class GraphConvolutionSparse(GraphConvolution):
     '''Graph convolution layer for sparse inputs.'''
 
     def __init__(self, input_dim, output_dim, adj, features_nonzero,
                  dropout=0., act=tf.nn.relu, **kwargs):
-        super(GraphConvolutionSparse, self).__init__(dropout, act, **kwargs)
-
-        with tf.compat.v1.variable_scope(self.name + '_vars'):
-            self.vars['weights'] = weight_variable_glorot(
-                input_dim, output_dim, name='weights')
-
-        self.adj = adj
-
-        self.issparse = True
+        super(GraphConvolutionSparse, self).__init__(input_dim, output_dim,
+                                                     adj, dropout, act,
+                                                     **kwargs)
         self.features_nonzero = features_nonzero
 
     def _call(self, inputs):

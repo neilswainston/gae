@@ -73,7 +73,7 @@ class GCNModelAE(Model):
         self.hidden2 = hidden2
 
         self.hidden_layer1 = None
-        self.embeddings = None
+        # self.embeddings = None
 
         self.build()
 
@@ -87,7 +87,7 @@ class GCNModelAE(Model):
             dropout=self.dropout,
             logging=self.logging)(self.inputs)
 
-        self.embeddings = GraphConvolution(
+        self.z_mean = GraphConvolution(
             input_dim=self.hidden1,
             output_dim=self.hidden2,
             adj=self.adj,
@@ -95,11 +95,9 @@ class GCNModelAE(Model):
             dropout=self.dropout,
             logging=self.logging)(self.hidden_layer1)
 
-        self.z_mean = self.embeddings
-
         self.reconstructions = InnerProductDecoder(
             act=lambda x: x,
-            logging=self.logging)(self.embeddings)
+            logging=self.logging)(self.z_mean)
 
 
 class GCNModelVAE(Model):
@@ -149,7 +147,7 @@ class GCNModelVAE(Model):
             adj=self.adj,
             act=lambda x: x,
             dropout=self.dropout,
-            logging=self.logging)(self.hidden1)
+            logging=self.logging)(self.hidden_layer1)
 
         self.z = self.z_mean + \
             tf.random_normal(

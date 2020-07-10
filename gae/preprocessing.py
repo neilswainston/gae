@@ -44,16 +44,17 @@ def construct_feed_dict(adj_normalized, adj, features, placeholders):
     return feed_dict
 
 
-def mask_test_edges(adj):
+def mask_test_edges(adj, prop_test=0.1, prop_val=0.05):
     '''Function to build test set with 10% positive links
     NOTE: Splits are randomized and results might slightly deviate from
     reported numbers in the paper.
     TODO: Clean up.'''
 
-    # Remove diagonal elements
+    # Remove diagonal elements:
     adj = adj - \
         sp.dia_matrix((adj.diagonal()[np.newaxis, :], [0]), shape=adj.shape)
     adj.eliminate_zeros()
+
     # Check that diag is zero:
     assert np.diag(adj.todense()).sum() == 0
 
@@ -61,8 +62,8 @@ def mask_test_edges(adj):
     adj_tuple = sparse_to_tuple(adj_triu)
     edges = adj_tuple[0]
     edges_all = sparse_to_tuple(adj)[0]
-    num_test = int(np.floor(edges.shape[0] / 10.))
-    num_val = int(np.floor(edges.shape[0] / 20.))
+    num_test = int(np.floor(edges.shape[0] * prop_test))
+    num_val = int(np.floor(edges.shape[0] * prop_val))
 
     all_edge_idx = list(range(edges.shape[0]))
     np.random.shuffle(all_edge_idx)
