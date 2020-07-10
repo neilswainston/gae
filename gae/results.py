@@ -11,12 +11,8 @@ from sklearn.metrics import roc_auc_score
 import numpy as np
 
 
-def get_roc_score(feed_dict, placeholders, sess, model, adj_orig,
-                  edges_pos, edges_neg, emb=None):
+def get_roc_score(adj_orig, edges_pos, edges_neg, emb):
     '''Get ROC score.'''
-    if emb is None:
-        feed_dict.update({placeholders['dropout']: 0})
-        emb = sess.run(model.z_mean, feed_dict=feed_dict)
 
     def _sigmoid(x):
         return 1 / (1 + np.exp(-x))

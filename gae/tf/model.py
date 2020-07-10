@@ -19,11 +19,20 @@ def get_model(placeholders, num_features, num_nonzero_feats,
               hidden1, hidden2, num_nodes, is_ae):
     '''Get model.'''
     if is_ae:
-        return GCNModelAE(placeholders, num_features, num_nonzero_feats,
-                          hidden1=hidden1, hidden2=hidden2)
+        return GCNModelAE(placeholders['features'],
+                          placeholders['adj'],
+                          placeholders['dropout'],
+                          num_features,
+                          num_nonzero_feats,
+                          hidden1=hidden1,
+                          hidden2=hidden2)
     # else:
-    return GCNModelVAE(placeholders, num_features,
-                       num_nodes, num_nonzero_feats,
+    return GCNModelVAE(placeholders['features'],
+                       placeholders['adj'],
+                       placeholders['dropout'],
+                       num_features,
+                       num_nodes,
+                       num_nonzero_feats,
                        hidden1=hidden1, hidden2=hidden2)
 
 
@@ -61,15 +70,15 @@ class Model():
 class GCNModelAE(Model):
     '''GCN model autoencoder.'''
 
-    def __init__(self, placeholders, num_features, num_nonzero_feats,
+    def __init__(self, inputs, adj, dropout, num_features, num_nonzero_feats,
                  hidden1, hidden2, **kwargs):
         super(GCNModelAE, self).__init__(**kwargs)
 
-        self.inputs = placeholders['features']
+        self.inputs = inputs
         self.input_dim = num_features
         self.num_nonzero_feats = num_nonzero_feats
-        self.adj = placeholders['adj']
-        self.dropout = placeholders['dropout']
+        self.adj = adj
+        self.dropout = dropout
         self.hidden1 = hidden1
         self.hidden2 = hidden2
         self.build()
@@ -101,16 +110,16 @@ class GCNModelAE(Model):
 class GCNModelVAE(Model):
     '''GCN model variational autoencoder.'''
 
-    def __init__(self, placeholders, num_features, num_nodes,
+    def __init__(self, inputs, adj, dropout, num_features, num_nodes,
                  num_nonzero_feats, hidden1, hidden2, **kwargs):
         super(GCNModelVAE, self).__init__(**kwargs)
 
-        self.inputs = placeholders['features']
+        self.inputs = inputs
         self.input_dim = num_features
         self.num_nonzero_feats = num_nonzero_feats
         self.n_samples = num_nodes
-        self.adj = placeholders['adj']
-        self.dropout = placeholders['dropout']
+        self.adj = adj
+        self.dropout = dropout
         self.hidden1 = hidden1
         self.hidden2 = hidden2
 

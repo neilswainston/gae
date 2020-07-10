@@ -59,15 +59,6 @@ def sparse_to_tuple(sparse_mx):
     return coords, values, shape
 
 
-def construct_feed_dict(adj_normalized, adj, features, placeholders):
-    '''construct feed dictionary.'''
-    feed_dict = {}
-    feed_dict.update({placeholders['features']: features})
-    feed_dict.update({placeholders['adj']: adj_normalized})
-    feed_dict.update({placeholders['adj_orig']: adj})
-    return feed_dict
-
-
 def _preprocess_graph(adj):
     '''Preprocess graph.'''
     adj = sp.coo_matrix(adj)
