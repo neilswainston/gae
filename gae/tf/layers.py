@@ -11,23 +11,10 @@ All rights reserved.
 # pylint: disable=too-few-public-methods
 # pylint: disable=too-many-arguments
 # pylint: disable=wrong-import-order
-from gae.initializations import weight_variable_glorot
+import uuid
+
+from gae.tf.initializations import weight_variable_glorot
 import tensorflow as tf
-
-
-# global unique layer ID dictionary for layer name assignment
-_LAYER_UIDS = {}
-
-
-def get_layer_uid(layer_name=''):
-    '''Helper function, assigns unique layer IDs
-    '''
-    if layer_name not in _LAYER_UIDS:
-        _LAYER_UIDS[layer_name] = 1
-        return 1
-    # else:
-    _LAYER_UIDS[layer_name] += 1
-    return _LAYER_UIDS[layer_name]
 
 
 class Layer():
@@ -44,7 +31,7 @@ class Layer():
 
     def __init__(self, **kwargs):
         layer = self.__class__.__name__.lower()
-        self.name = kwargs.get('name', layer + '_' + str(get_layer_uid(layer)))
+        self.name = kwargs.get('name', layer + '_' + str(uuid.uuid4()))
 
         self.act = kwargs.get('act')
         self.dropout = kwargs.get('dropout')

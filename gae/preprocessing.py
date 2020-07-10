@@ -13,6 +13,29 @@ import numpy as np
 import scipy.sparse as sp
 
 
+def preprocess_adj(adj):
+    '''Pre-process data.'''
+    # Store original adjacency matrix (without diagonal entries) for later:
+    adj_orig = adj
+
+    adj_orig = adj_orig - \
+        sp.dia_matrix((adj_orig.diagonal()[np.newaxis, :], [
+                      0]), shape=adj_orig.shape)
+
+    adj_orig.eliminate_zeros()
+
+    adj, _, val_edges, val_edges_false, test_edges, \
+        test_edges_false = _mask_test_edges(adj)
+
+    # Some preprocessing:
+    adj_norm = _preprocess_graph(adj)
+
+    num_nodes = adj.shape[0]
+
+    return adj, adj_orig, adj_norm, val_edges, val_edges_false, test_edges, \
+        test_edges_false, num_nodes
+
+
 def sparse_to_tuple(sparse_mx):
     '''Sparse to tuple.'''
     if not sp.isspmatrix_coo(sparse_mx):
@@ -24,7 +47,16 @@ def sparse_to_tuple(sparse_mx):
     return coords, values, shape
 
 
-def preprocess_graph(adj):
+def construct_feed_dict(adj_normalized, adj, features, placeholders):
+    '''construct feed dictionary.'''
+    feed_dict = dict()
+    feed_dict.update({placeholders['features']: features})
+    feed_dict.update({placeholders['adj']: adj_normalized})
+    feed_dict.update({placeholders['adj_orig']: adj})
+    return feed_dict
+
+
+def _preprocess_graph(adj):
     '''Preprocess graph.'''
     adj = sp.coo_matrix(adj)
     adj_ = adj + sp.eye(adj.shape[0])
@@ -35,16 +67,7 @@ def preprocess_graph(adj):
     return sparse_to_tuple(adj_normalized)
 
 
-def construct_feed_dict(adj_normalized, adj, features, placeholders):
-    '''construct feed dictionary.'''
-    feed_dict = dict()
-    feed_dict.update({placeholders['features']: features})
-    feed_dict.update({placeholders['adj']: adj_normalized})
-    feed_dict.update({placeholders['adj_orig']: adj})
-    return feed_dict
-
-
-def mask_test_edges(adj, prop_test=0.1, prop_val=0.05):
+def _mask_test_edges(adj, prop_test=0.1, prop_val=0.05):
     '''Function to build test set with 10% positive links
     NOTE: Splits are randomized and results might slightly deviate from
     reported numbers in the paper.

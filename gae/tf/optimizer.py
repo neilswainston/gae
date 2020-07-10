@@ -14,6 +14,34 @@ All rights reserved.
 import tensorflow as tf
 
 
+def get_opt(model, adj, placeholders, num_nodes, learning_rate, is_ae):
+    '''Get optimiser.'''
+    pos_weight = float(adj.shape[0] * adj.shape[0] - adj.sum()) / adj.sum()
+
+    norm = adj.shape[0] * adj.shape[0] / \
+        float((adj.shape[0] * adj.shape[0] - adj.sum()) * 2)
+
+    with tf.name_scope('optimizer'):
+        labels = tf.reshape(
+            tf.sparse.to_dense(
+                placeholders['adj_orig'],
+                validate_indices=False), [-1])
+
+        if is_ae:
+            return OptimizerAE(preds=model.reconstructions,
+                               labels=labels,
+                               pos_weight=pos_weight,
+                               norm=norm,
+                               learning_rate=learning_rate)
+        # else:
+        return OptimizerVAE(preds=model.reconstructions,
+                            labels=labels,
+                            model=model, num_nodes=num_nodes,
+                            pos_weight=pos_weight,
+                            norm=norm,
+                            learning_rate=learning_rate)
+
+
 class OptimizerAE():
     '''AE optimiser.'''
 

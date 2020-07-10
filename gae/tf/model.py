@@ -10,9 +10,21 @@ All rights reserved.
 # pylint: disable=too-many-arguments
 # pylint: disable=too-many-instance-attributes
 # pylint: disable=wrong-import-order
-from gae.layers import GraphConvolution, GraphConvolutionSparse, \
+from gae.tf.layers import GraphConvolution, GraphConvolutionSparse, \
     InnerProductDecoder
 import tensorflow as tf
+
+
+def get_model(placeholders, num_features, num_nonzero_feats,
+              hidden1, hidden2, num_nodes, is_ae):
+    '''Get model.'''
+    if is_ae:
+        return GCNModelAE(placeholders, num_features, num_nonzero_feats,
+                          hidden1=hidden1, hidden2=hidden2)
+    # else:
+    return GCNModelVAE(placeholders, num_features,
+                       num_nodes, num_nonzero_feats,
+                       hidden1=hidden1, hidden2=hidden2)
 
 
 class Model():
