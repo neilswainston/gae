@@ -188,7 +188,7 @@ def main():
     adj, features = load_data('cora')
 
     # Train:
-    train(adj, features)
+    train(adj, features, is_ae=False)
 
 
 if __name__ == '__main__':

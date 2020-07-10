@@ -82,6 +82,7 @@ class GCNModelAE(Model):
 
         self.reconstructions = InnerProductDecoder(
             act=lambda x: x,
+            dropout=0.0,
             logging=self.logging)(self.z_mean)
 
 
@@ -109,7 +110,7 @@ class GCNModelVAE(Model):
         self.build()
 
     def _build(self):
-        self.hidden_layer1 = GraphConvolutionSparse(
+        hidden_layer1 = GraphConvolutionSparse(
             input_dim=self.input_dim,
             output_dim=self.hidden1,
             adj=self.adj,
@@ -124,7 +125,7 @@ class GCNModelVAE(Model):
             adj=self.adj,
             act=lambda x: x,
             dropout=self.dropout,
-            logging=self.logging)(self.hidden_layer1)
+            logging=self.logging)(hidden_layer1)
 
         self.z_log_std = GraphConvolution(
             input_dim=self.hidden1,
@@ -132,12 +133,13 @@ class GCNModelVAE(Model):
             adj=self.adj,
             act=lambda x: x,
             dropout=self.dropout,
-            logging=self.logging)(self.hidden_layer1)
+            logging=self.logging)(hidden_layer1)
 
-        self.z = self.z_mean + \
-            tf.random_normal(
+        z = self.z_mean + \
+            tf.random.normal(
                 [self.n_samples, self.hidden2]) * tf.exp(self.z_log_std)
 
         self.reconstructions = InnerProductDecoder(
             act=lambda x: x,
-            logging=self.logging)(self.z)
+            dropout=0.0,
+            logging=self.logging)(z)

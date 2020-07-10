@@ -42,21 +42,12 @@ class Layer():
         __call__(inputs): Wrapper for _call()
     '''
 
-    def __init__(self, dropout, act, **kwargs):
-        allowed_kwargs = {'name', 'logging'}
+    def __init__(self, **kwargs):
+        layer = self.__class__.__name__.lower()
+        self.name = kwargs.get('name', layer + '_' + str(get_layer_uid(layer)))
 
-        for kwarg in kwargs:
-            assert kwarg in allowed_kwargs, 'Invalid keyword arg: ' + kwarg
-
-        name = kwargs.get('name')
-
-        if not name:
-            layer = self.__class__.__name__.lower()
-            name = layer + '_' + str(get_layer_uid(layer))
-
-        self.act = act
-        self.dropout = dropout
-        self.name = name
+        self.act = kwargs.get('act')
+        self.dropout = kwargs.get('dropout')
         self.vars = {}
         self.logging = kwargs.get('logging', False)
         self.issparse = False
@@ -73,15 +64,16 @@ class Layer():
 class GraphConvolution(Layer):
     '''Graph convolution layer for undirected graph without edge labels.'''
 
-    def __init__(self, input_dim, output_dim, adj, dropout=0., act=tf.nn.relu,
-                 **kwargs):
-        super(GraphConvolution, self).__init__(dropout, act, **kwargs)
+    def __init__(self, **kwargs):
+        super(GraphConvolution, self).__init__(**kwargs)
 
         with tf.compat.v1.variable_scope(self.name + '_vars'):
             self.vars['weights'] = weight_variable_glorot(
-                input_dim, output_dim, name='weights')
+                kwargs.get('input_dim'),
+                kwargs.get('output_dim'),
+                name='weights')
 
-        self.adj = adj
+        self.adj = kwargs.get('adj')
 
     def _call(self, inputs):
         '''Call.'''
@@ -94,12 +86,9 @@ class GraphConvolution(Layer):
 class GraphConvolutionSparse(GraphConvolution):
     '''Graph convolution layer for sparse inputs.'''
 
-    def __init__(self, input_dim, output_dim, adj, num_nonzero_feats,
-                 dropout=0., act=tf.nn.relu, **kwargs):
-        super(GraphConvolutionSparse, self).__init__(input_dim, output_dim,
-                                                     adj, dropout, act,
-                                                     **kwargs)
-        self.num_nonzero_feats = num_nonzero_feats
+    def __init__(self, **kwargs):
+        super(GraphConvolutionSparse, self).__init__(**kwargs)
+        self.num_nonzero_feats = kwargs.get('num_nonzero_feats')
 
     def _call(self, inputs):
         '''Call.'''
@@ -111,9 +100,6 @@ class GraphConvolutionSparse(GraphConvolution):
 
 class InnerProductDecoder(Layer):
     '''Decoder model layer for link prediction.'''
-
-    def __init__(self, dropout=0.0, act=tf.nn.sigmoid, **kwargs):
-        super(InnerProductDecoder, self).__init__(dropout, act, **kwargs)
 
     def _call(self, inputs):
         inputs = tf.nn.dropout(inputs, rate=self.dropout)
