@@ -6,18 +6,22 @@ All rights reserved.
 @author: neilswainston
 '''
 # pylint: disable=invalid-name
+# pylint: disable=no-name-in-module
 # pylint: disable=too-many-arguments
 # pylint: disable=too-many-locals
 # pylint: disable=wrong-import-order
 import os
 import time
 
+from scipy.special import expit
+from sklearn.metrics import average_precision_score, roc_auc_score
+
 from gae.data import load_data
 from gae.preprocessing import preprocess_adj, preprocess_feat, \
     sparse_to_tuple
-from gae.results import get_roc_score
 from gae.tf.model import get_model
 from gae.tf.optimizer import get_opt
+import numpy as np
 import scipy.sparse as sp
 import tensorflow as tf
 
@@ -31,8 +35,7 @@ def train(adj, features, is_ae=True, use_features=True,
     '''train.'''
 
     # Adjacency:
-    adj, adj_orig, adj_norm, val_edges, val_edges_false, test_edges, \
-        test_edges_false, num_nodes = preprocess_adj(adj)
+    adj, adj_orig, adj_norm, num_nodes = preprocess_adj(adj)
 
     # Features:
     features, num_features, num_nonzero_feats = \
@@ -75,25 +78,33 @@ def train(adj, features, is_ae=True, use_features=True,
             [opt.opt_op, opt.cost, opt.accuracy],
             feed_dict=feed_dict)
 
-        emb = sess.run(model.z_mean, feed_dict=feed_dict)
-
-        roc_curr, ap_curr = get_roc_score(
-            adj_orig, val_edges, val_edges_false, emb)
+        # roc_curr, ap_curr = get_roc_score(
+        #    adj_orig, val_edges, val_edges_false, adj_rec)
 
         print('Epoch:', '%05d' % (epoch + 1),
               'train_loss=', '{:.5f}'.format(avg_cost),
               'train_acc=', '{:.5f}'.format(avg_accuracy),
-              'val_roc=', '{:.5f}'.format(roc_curr),
-              'val_ap=', '{:.5f}'.format(ap_curr),
+              # 'val_roc=', '{:.5f}'.format(roc_curr),
+              # 'val_ap=', '{:.5f}'.format(ap_curr),
               'time=', '{:.5f}'.format(time.time() - t))
 
-    emb = sess.run(model.z_mean, feed_dict=feed_dict)
-
-    roc_score, ap_score = get_roc_score(
-        adj_orig, test_edges, test_edges_false, emb)
+    adj_rec = _get_adj_rec(sess, model, feed_dict)
+    roc_score, ap_score = _get_roc_score(adj_orig, adj_rec)
 
     print('Test ROC score: ' + str(roc_score))
     print('Test AP score: ' + str(ap_score))
+
+
+def _get_adj_rec(sess, model, feed_dict):
+    '''Get reconstructed adjacency matrix.'''
+    emb = sess.run(model.z_mean, feed_dict=feed_dict)
+    return expit(np.dot(emb, emb.T))
+
+
+def _get_roc_score(adj_orig, adj_rec):
+    '''Get ROC score.'''
+    return roc_auc_score(adj_orig, adj_rec), \
+        average_precision_score(adj_orig, adj_rec)
 
 
 def main():

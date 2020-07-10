@@ -24,16 +24,14 @@ def preprocess_adj(adj):
 
     adj_orig.eliminate_zeros()
 
-    adj, _, val_edges, val_edges_false, test_edges, \
-        test_edges_false = _mask_test_edges(adj)
+    adj = _mask_test_edges(adj)
 
     # Some preprocessing:
     adj_norm = _preprocess_graph(adj)
 
     num_nodes = adj.shape[0]
 
-    return adj, adj_orig, adj_norm, val_edges, val_edges_false, test_edges, \
-        test_edges_false, num_nodes
+    return adj, adj_orig.toarray(), adj_norm, num_nodes
 
 
 def preprocess_feat(features, use_features):
@@ -155,6 +153,4 @@ def _mask_test_edges(adj, prop_test=0.1, prop_val=0.05):
         (data, (train_edges[:, 0], train_edges[:, 1])), shape=adj.shape)
     adj_train = adj_train + adj_train.T
 
-    # NOTE: these edge lists only contain single direction of edge!
-    return adj_train, train_edges, val_edges, val_edges_false, test_edges, \
-        test_edges_false
+    return adj_train
