@@ -19,19 +19,8 @@ class Model():
     '''Model baseclass.'''
 
     def __init__(self, **kwargs):
-        allowed_kwargs = {'name', 'logging'}
-        for kwarg in kwargs:
-            assert kwarg in allowed_kwargs, 'Invalid keyword arg: ' + kwarg
-
-        name = kwargs.get('name')
-
-        if not name:
-            name = self.__class__.__name__.lower()
-
-        self.name = name
-
+        self.name = kwargs.get('name', self.__class__.__name__.lower())
         self.logging = kwargs.get('logging', False)
-
         self.vars = {}
 
         self.z_mean = None
@@ -60,29 +49,25 @@ class Model():
 class GCNModelAE(Model):
     '''GCN model autoencoder.'''
 
-    def __init__(self, placeholders, num_features, features_nonzero,
+    def __init__(self, placeholders, num_features, num_nonzero_feats,
                  hidden1, hidden2, **kwargs):
         super(GCNModelAE, self).__init__(**kwargs)
 
         self.inputs = placeholders['features']
         self.input_dim = num_features
-        self.features_nonzero = features_nonzero
+        self.num_nonzero_feats = num_nonzero_feats
         self.adj = placeholders['adj']
         self.dropout = placeholders['dropout']
         self.hidden1 = hidden1
         self.hidden2 = hidden2
-
-        self.hidden_layer1 = None
-        # self.embeddings = None
-
         self.build()
 
     def _build(self):
-        self.hidden_layer1 = GraphConvolutionSparse(
+        hidden_layer1 = GraphConvolutionSparse(
             input_dim=self.input_dim,
             output_dim=self.hidden1,
             adj=self.adj,
-            features_nonzero=self.features_nonzero,
+            num_nonzero_feats=self.num_nonzero_feats,
             act=tf.nn.relu,
             dropout=self.dropout,
             logging=self.logging)(self.inputs)
@@ -93,7 +78,7 @@ class GCNModelAE(Model):
             adj=self.adj,
             act=lambda x: x,
             dropout=self.dropout,
-            logging=self.logging)(self.hidden_layer1)
+            logging=self.logging)(hidden_layer1)
 
         self.reconstructions = InnerProductDecoder(
             act=lambda x: x,
@@ -103,13 +88,13 @@ class GCNModelAE(Model):
 class GCNModelVAE(Model):
     '''GCN model variational autoencoder.'''
 
-    def __init__(self, placeholders, num_features, num_nodes, features_nonzero,
-                 hidden1, hidden2, **kwargs):
+    def __init__(self, placeholders, num_features, num_nodes,
+                 num_nonzero_feats, hidden1, hidden2, **kwargs):
         super(GCNModelVAE, self).__init__(**kwargs)
 
         self.inputs = placeholders['features']
         self.input_dim = num_features
-        self.features_nonzero = features_nonzero
+        self.num_nonzero_feats = num_nonzero_feats
         self.n_samples = num_nodes
         self.adj = placeholders['adj']
         self.dropout = placeholders['dropout']
@@ -128,7 +113,7 @@ class GCNModelVAE(Model):
             input_dim=self.input_dim,
             output_dim=self.hidden1,
             adj=self.adj,
-            features_nonzero=self.features_nonzero,
+            num_nonzero_feats=self.num_nonzero_feats,
             act=tf.nn.relu,
             dropout=self.dropout,
             logging=self.logging)(self.inputs)

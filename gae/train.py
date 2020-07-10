@@ -187,7 +187,7 @@ def main():
     # Load data:
     adj, features = load_data('cora')
 
-    # Train:
+    # Train:
     train(adj, features)
 
 
