@@ -33,36 +33,25 @@ def train(adj, features, is_ae=True, use_features=True,
           epochs=200, dropout=0.0, hidden1=32, hidden2=16, learning_rate=0.01):
     '''train.'''
 
-    # Store original adjacency matrix (without diagonal entries) for later
-    adj_orig = adj
-    adj_orig = adj_orig - \
-        sp.dia_matrix((adj_orig.diagonal()[np.newaxis, :], [
-                      0]), shape=adj_orig.shape)
-    adj_orig.eliminate_zeros()
+    # Adjacency:
+    adj, adj_orig, adj_norm, val_edges, val_edges_false, test_edges, \
+        test_edges_false, num_nodes = _preprocess_adj(adj)
 
-    adj_train, _, val_edges, val_edges_false, test_edges, \
-        test_edges_false = mask_test_edges(adj)
-    adj = adj_train
-
+    # Features:
     if not use_features:
         features = sp.identity(features.shape[0])  # featureless
 
-    # Some preprocessing
-    adj_norm = preprocess_graph(adj)
+    features = sparse_to_tuple(features.tocoo())
+    num_features = features[2][1]
+    features_nonzero = features[1].shape[0]
 
-    # Define placeholders
+    # Define placeholders:
     placeholders = {
         'features': tf.compat.v1.sparse_placeholder(tf.float32),
         'adj': tf.compat.v1.sparse_placeholder(tf.float32),
         'adj_orig': tf.compat.v1.sparse_placeholder(tf.float32),
         'dropout': tf.compat.v1.placeholder_with_default(0., shape=())
     }
-
-    num_nodes = adj.shape[0]
-
-    features = sparse_to_tuple(features.tocoo())
-    num_features = features[2][1]
-    features_nonzero = features[1].shape[0]
 
     # Create model:
     model = None
@@ -81,21 +70,20 @@ def train(adj, features, is_ae=True, use_features=True,
         float((adj.shape[0] * adj.shape[0] - adj.sum()) * 2)
 
     with tf.name_scope('optimizer'):
+        labels = tf.reshape(
+            tf.sparse.to_dense(
+                placeholders['adj_orig'],
+                validate_indices=False), [-1])
+
         if is_ae:
             opt = OptimizerAE(preds=model.reconstructions,
-                              labels=tf.reshape(
-                                  tf.sparse.to_dense(
-                                      placeholders['adj_orig'],
-                                      validate_indices=False), [-1]),
+                              labels=labels,
                               pos_weight=pos_weight,
                               norm=norm,
                               learning_rate=learning_rate)
         else:
             opt = OptimizerVAE(preds=model.reconstructions,
-                               labels=tf.reshape(
-                                   tf.sparse.to_dense(
-                                       placeholders['adj_orig'],
-                                       validate_indices=False), [-1]),
+                               labels=labels,
                                model=model, num_nodes=num_nodes,
                                pos_weight=pos_weight,
                                norm=norm,
@@ -107,7 +95,7 @@ def train(adj, features, is_ae=True, use_features=True,
 
     val_roc_score = []
 
-    adj_label = adj_train + sp.eye(adj_train.shape[0])
+    adj_label = adj + sp.eye(adj.shape[0])
     adj_label = sparse_to_tuple(adj_label)
 
     # Train model:
@@ -120,13 +108,10 @@ def train(adj, features, is_ae=True, use_features=True,
 
         feed_dict.update({placeholders['dropout']: dropout})
 
-        # Run single weight update
-        outs = sess.run([opt.opt_op, opt.cost, opt.accuracy],
-                        feed_dict=feed_dict)
-
-        # Compute average loss
-        avg_cost = outs[1]
-        avg_accuracy = outs[2]
+        # Run single weight update:
+        _, avg_cost, avg_accuracy = sess.run(
+            [opt.opt_op, opt.cost, opt.accuracy],
+            feed_dict=feed_dict)
 
         roc_curr, ap_curr = _get_roc_score(
             feed_dict, placeholders, sess, model, adj_orig,
@@ -147,6 +132,29 @@ def train(adj, features, is_ae=True, use_features=True,
 
     print('Test ROC score: ' + str(roc_score))
     print('Test AP score: ' + str(ap_score))
+
+
+def _preprocess_adj(adj):
+    '''Pre-process data.'''
+    # Store original adjacency matrix (without diagonal entries) for later:
+    adj_orig = adj
+
+    adj_orig = adj_orig - \
+        sp.dia_matrix((adj_orig.diagonal()[np.newaxis, :], [
+                      0]), shape=adj_orig.shape)
+
+    adj_orig.eliminate_zeros()
+
+    adj, _, val_edges, val_edges_false, test_edges, \
+        test_edges_false = mask_test_edges(adj)
+
+    # Some preprocessing:
+    adj_norm = preprocess_graph(adj)
+
+    num_nodes = adj.shape[0]
+
+    return adj, adj_orig, adj_norm, val_edges, val_edges_false, test_edges, \
+        test_edges_false, num_nodes
 
 
 def _get_roc_score(feed_dict, placeholders, sess, model, adj_orig,
