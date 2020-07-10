@@ -14,7 +14,7 @@ All rights reserved.
 import tensorflow as tf
 
 
-def get_opt(model, adj, placeholders, num_nodes, learning_rate, is_ae):
+def get_opt(model, adj, adj_orig, num_nodes, learning_rate, is_ae):
     '''Get optimiser.'''
     pos_weight = float(adj.shape[0] * adj.shape[0] - adj.sum()) / adj.sum()
 
@@ -24,7 +24,7 @@ def get_opt(model, adj, placeholders, num_nodes, learning_rate, is_ae):
     with tf.name_scope('optimizer'):
         labels = tf.reshape(
             tf.sparse.to_dense(
-                placeholders['adj_orig'],
+                adj_orig,
                 validate_indices=False), [-1])
 
         if is_ae:

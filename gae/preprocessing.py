@@ -36,6 +36,18 @@ def preprocess_adj(adj):
         test_edges_false, num_nodes
 
 
+def preprocess_feat(features, use_features):
+    '''Preprocess features.'''
+    if not use_features:
+        features = sp.identity(features.shape[0])  # featureless
+
+    features = sparse_to_tuple(features.tocoo())
+    num_features = features[2][1]
+    num_nonzero_feats = features[1].shape[0]
+
+    return features, num_features, num_nonzero_feats
+
+
 def sparse_to_tuple(sparse_mx):
     '''Sparse to tuple.'''
     if not sp.isspmatrix_coo(sparse_mx):
@@ -49,7 +61,7 @@ def sparse_to_tuple(sparse_mx):
 
 def construct_feed_dict(adj_normalized, adj, features, placeholders):
     '''construct feed dictionary.'''
-    feed_dict = dict()
+    feed_dict = {}
     feed_dict.update({placeholders['features']: features})
     feed_dict.update({placeholders['adj']: adj_normalized})
     feed_dict.update({placeholders['adj_orig']: adj})

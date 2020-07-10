@@ -14,7 +14,7 @@ import time
 
 from gae.data import load_data
 from gae.preprocessing import construct_feed_dict, preprocess_adj, \
-    sparse_to_tuple
+    sparse_to_tuple, preprocess_feat
 from gae.results import get_roc_score
 from gae.tf.model import get_model
 from gae.tf.optimizer import get_opt
@@ -35,12 +35,8 @@ def train(adj, features, is_ae=True, use_features=True,
         test_edges_false, num_nodes = preprocess_adj(adj)
 
     # Features:
-    if not use_features:
-        features = sp.identity(features.shape[0])  # featureless
-
-    features = sparse_to_tuple(features.tocoo())
-    num_features = features[2][1]
-    num_nonzero_feats = features[1].shape[0]
+    features, num_features, num_nonzero_feats = \
+        preprocess_feat(features, use_features)
 
     # Define placeholders:
     placeholders = {
@@ -55,13 +51,12 @@ def train(adj, features, is_ae=True, use_features=True,
                       hidden1, hidden2, num_nodes, is_ae)
 
     # Optimizer:
-    opt = get_opt(model, adj, placeholders, num_nodes, learning_rate, is_ae)
+    opt = get_opt(model, adj, placeholders['adj_orig'], num_nodes,
+                  learning_rate, is_ae)
 
     # Initialize session:
     sess = tf.compat.v1.Session()
     sess.run(tf.compat.v1.global_variables_initializer())
-
-    val_roc_score = []
 
     adj_label = adj + sp.eye(adj.shape[0])
     adj_label = sparse_to_tuple(adj_label)
@@ -85,12 +80,10 @@ def train(adj, features, is_ae=True, use_features=True,
             feed_dict, placeholders, sess, model, adj_orig,
             val_edges, val_edges_false)
 
-        val_roc_score.append(roc_curr)
-
         print('Epoch:', '%05d' % (epoch + 1),
               'train_loss=', '{:.5f}'.format(avg_cost),
               'train_acc=', '{:.5f}'.format(avg_accuracy),
-              'val_roc=', '{:.5f}'.format(val_roc_score[-1]),
+              'val_roc=', '{:.5f}'.format(roc_curr),
               'val_ap=', '{:.5f}'.format(ap_curr),
               'time=', '{:.5f}'.format(time.time() - t))
 
