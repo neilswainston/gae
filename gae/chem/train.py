@@ -8,22 +8,41 @@ All rights reserved.
 # pylint: disable=invalid-name
 # pylint: disable=no-member
 # pylint: disable=wrong-import-order
+import sys
+
 from rdkit import Chem
+import scipy
 
 from gae import train
+import numpy as np
 import pandas as pd
 
 
 def _load_data(filename):
     '''Load data.'''
-
     df = pd.read_csv(filename)
-
-    for smiles in df['smiles']:
-        mol = Chem.MolFromSmiles(smiles)
-        print(mol)
-
+    smiles = df['smiles'][0]
+    adj, features = _get_data(smiles)
     return adj, features
+
+
+def _get_data(smiles):
+    '''Get data from SMILES.'''
+    mol = Chem.MolFromSmiles(smiles)
+
+    adj = scipy.sparse.lil_matrix(
+        (mol.GetNumAtoms(), mol.GetNumAtoms()), dtype=int)
+
+    for bond in mol.GetBonds():
+        adj[bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()] = 1
+
+    features = np.array([[atom.GetAtomicNum(),
+                          atom.GetMass(),
+                          atom.GetExplicitValence(),
+                          atom.GetFormalCharge()]
+                         for atom in mol.GetAtoms()])
+
+    return scipy.sparse.csr_matrix(adj), scipy.sparse.lil_matrix(features)
 
 
 def main(args):
@@ -32,8 +51,8 @@ def main(args):
     # Load data:
     adj, features = _load_data(args[0])
 
-    # Train:
-    train.train(adj, features)
+    # Train:
+    train.train(adj, features, epochs=1000)
 
 
 if __name__ == '__main__':
