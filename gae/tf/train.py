@@ -105,7 +105,7 @@ def _get_adj_rec(sess, model, feed_dict):
 def _get_roc_score(adj, adj_rec):
     '''Get ROC score.'''
     adj = adj.toarray().flatten()
-    adj_rec = adj_rec.toarray().flatten()
+    adj_rec = adj_rec.flatten()
     return roc_auc_score(adj, adj_rec), average_precision_score(adj, adj)
 
 
@@ -116,7 +116,7 @@ def main():
     adj, features = load_data('cora')
 
     # Train:
-    train(adj, features, is_ae=True)
+    train(adj, features, is_ae=False)
 
 
 if __name__ == '__main__':
