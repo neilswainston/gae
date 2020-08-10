@@ -10,43 +10,46 @@ All rights reserved.
 # pylint: disable=too-many-branches
 # pylint: disable=too-many-statements
 import numpy as np
-import scipy.sparse as sp
 
 
 def preprocess_adj(adj):
     '''Pre-process adjacency.'''
-    adj = sp.coo_matrix(adj)
+    # adj = sp.coo_matrix(adj)
 
-    adj_ = adj + sp.eye(adj.shape[0])
+    adj_ = adj + np.eye(adj.shape[1])
 
-    rowsum = np.array(adj_.sum(1))
+    rowsum = np.array(adj_.sum(2))
 
-    degree_mat_inv_sqrt = sp.diags(np.power(rowsum, -0.5).flatten())
+    degree_mat_inv_sqrt = np.array([np.diag(array)
+                                    for array in np.power(rowsum, -0.5)])
 
-    adj_norm = adj_.dot(degree_mat_inv_sqrt).transpose().dot(
-        degree_mat_inv_sqrt).tocoo()
+    adj_norm = np.matmul(
+        np.transpose(
+            np.matmul(adj_, degree_mat_inv_sqrt),
+            axes=(0, 2, 1)),
+        degree_mat_inv_sqrt)
 
     return sparse_to_tuple(adj_norm)
 
 
-def preprocess_feat(features, use_features):
+def preprocess_feat(features):
     '''Preprocess features.'''
-    if not use_features:
-        features = sp.identity(features.shape[0])  # featureless
-
-    features = sparse_to_tuple(features.tocoo())
-    num_features = features[2][1]
-    num_nonzero_feats = features[1].shape[0]
+    features = sparse_to_tuple(features)
+    num_features = features[2][2]
+    num_nonzero_feats = features[1].size
 
     return features, num_features, num_nonzero_feats
 
 
-def sparse_to_tuple(sparse_mx):
+def sparse_to_tuple(matrix):
     '''Sparse to tuple.'''
-    if not sp.isspmatrix_coo(sparse_mx):
-        sparse_mx = sparse_mx.tocoo()
+    nonzero = matrix.nonzero()
+    nonzero_t = np.transpose(nonzero)
 
-    coords = np.vstack((sparse_mx.row, sparse_mx.col)).transpose()
-    values = sparse_mx.data
-    shape = sparse_mx.shape
-    return coords, values, shape
+    coords = np.array(
+        np.split(nonzero_t[:, (1, 2)],
+                 np.cumsum(np.unique(nonzero_t[:, 0],
+                                     return_counts=True)[1])[:-1]))
+
+    values = matrix[nonzero].reshape(matrix.shape[0], -1)
+    return coords, values, matrix.shape

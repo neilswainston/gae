@@ -8,8 +8,6 @@ All rights reserved.
 # pylint: disable=invalid-name
 # pylint: disable=no-member
 # pylint: disable=wrong-import-order
-import sys
-
 from rdkit import Chem
 import scipy
 
@@ -45,15 +43,16 @@ def _get_data(smiles):
     return scipy.sparse.csr_matrix(adj), scipy.sparse.lil_matrix(features)
 
 
-def main(args):
+def main():
     '''main method.'''
 
     # Load data:
-    adj, features = _load_data(args[0])
+    filename = 'data/spectra.csv'
+    adj, features = _load_data(filename)
 
     # Train:
     train_old.train(adj, features, epochs=10000)
 
 
 if __name__ == '__main__':
-    main(sys.argv[1:])
+    main()

@@ -22,7 +22,6 @@ from gae.preprocessing import preprocess_adj, preprocess_feat, \
 from gae.tf.model import get_model
 from gae.tf.optimizer import get_opt
 import numpy as np
-import scipy.sparse as sp
 import tensorflow as tf
 
 
@@ -30,7 +29,7 @@ import tensorflow as tf
 os.environ['CUDA_VISIBLE_DEVICES'] = ''
 
 
-def train(adj, features, is_ae=True, use_features=True,
+def train(adj, features, is_ae=True,
           epochs=200, dropout=0.0, hidden1=256, hidden2=128,
           learning_rate=0.01):
     '''train.'''
@@ -40,7 +39,7 @@ def train(adj, features, is_ae=True, use_features=True,
 
     # Features:
     features, num_features, num_nonzero_feats = \
-        preprocess_feat(features, use_features)
+        preprocess_feat(features)
 
     # Define placeholders:
     placeholders = {
@@ -52,7 +51,7 @@ def train(adj, features, is_ae=True, use_features=True,
 
     # Create model:
     model = get_model(placeholders, num_features, num_nonzero_feats,
-                      hidden1, hidden2, adj.shape[0], is_ae)
+                      hidden1, hidden2, adj.shape[1], is_ae)
 
     # Optimizer:
     opt = get_opt(model, adj, placeholders['adj_orig'], learning_rate, is_ae)
@@ -65,7 +64,7 @@ def train(adj, features, is_ae=True, use_features=True,
     feed_dict = {
         placeholders['features']: features,
         placeholders['adj']: adj_norm,
-        placeholders['adj_orig']: sparse_to_tuple(adj + sp.eye(adj.shape[0])),
+        placeholders['adj_orig']: sparse_to_tuple(adj + np.eye(adj.shape[1])),
         placeholders['dropout']: dropout
     }
 

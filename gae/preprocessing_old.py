@@ -36,7 +36,7 @@ def preprocess_feat(features, use_features):
 
     features = sparse_to_tuple(sp.coo_matrix(features))
     num_features = features[2][1]
-    num_nonzero_feats = features[1].shape[0]
+    num_nonzero_feats = features[1].size
 
     return features, num_features, num_nonzero_feats
 
