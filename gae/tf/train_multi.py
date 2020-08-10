@@ -16,8 +16,7 @@ import time
 from scipy.special import expit
 from sklearn.metrics import average_precision_score, roc_auc_score
 
-from gae.data import load_data
-from gae.preprocessing import preprocess_adj, preprocess_feat, \
+from gae.preprocessing_multi import preprocess_adj, preprocess_feat, \
     sparse_to_tuple
 from gae.tf.model import get_model
 from gae.tf.optimizer import get_opt
@@ -106,17 +105,3 @@ def _get_roc_score(adj, adj_rec):
     adj = adj.toarray().flatten()
     adj_rec = adj_rec.flatten()
     return roc_auc_score(adj, adj_rec), average_precision_score(adj, adj)
-
-
-def main():
-    '''main method.'''
-
-    # Load data:
-    adj, features = load_data('cora')
-
-    # Train:
-    train(adj, features, is_ae=False)
-
-
-if __name__ == '__main__':
-    main()

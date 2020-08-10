@@ -11,7 +11,7 @@ All rights reserved.
 from rdkit import Chem
 import scipy
 
-from gae.tf import train
+from gae.tf import train_single
 import numpy as np
 import pandas as pd
 
@@ -19,21 +19,13 @@ import pandas as pd
 def _load_data(filename):
     '''Load data.'''
     df = pd.read_csv(filename)
-    smiles = df['smiles'][0:2]
+    smiles = df['smiles'][0]
     adj, features = _get_data(smiles)
     return adj, features
 
 
-def _get_data(all_smiles):
+def _get_data(smiles):
     '''Get data from SMILES.'''
-    data = [_get_entry(smiles) for smiles in all_smiles]
-    data = list(zip(*data))
-
-    return np.array(data[0]), np.array(data[1])
-
-
-def _get_entry(smiles):
-    '''Get entry from SMILES.'''
     mol = Chem.MolFromSmiles(smiles)
 
     adj = scipy.sparse.lil_matrix(
@@ -48,7 +40,7 @@ def _get_entry(smiles):
                           atom.GetFormalCharge()]
                          for atom in mol.GetAtoms()])
 
-    return adj.toarray(), features
+    return scipy.sparse.csr_matrix(adj), scipy.sparse.lil_matrix(features)
 
 
 def main():
@@ -59,7 +51,7 @@ def main():
     adj, features = _load_data(filename)
 
     # Train:
-    train.train(adj, features, epochs=10000)
+    train_single.train(adj, features, epochs=10000)
 
 
 if __name__ == '__main__':

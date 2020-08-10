@@ -17,7 +17,7 @@ from scipy.special import expit
 from sklearn.metrics import average_precision_score, roc_auc_score
 
 from gae.data import load_data
-from gae.preprocessing_old import preprocess_adj, preprocess_feat, \
+from gae.preprocessing_single import preprocess_adj, preprocess_feat, \
     sparse_to_tuple
 from gae.tf.model import get_model
 from gae.tf.optimizer import get_opt
