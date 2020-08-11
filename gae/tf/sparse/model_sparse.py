@@ -10,8 +10,8 @@ All rights reserved.
 # pylint: disable=too-many-arguments
 # pylint: disable=too-many-instance-attributes
 # pylint: disable=wrong-import-order
-from gae.tf.layers import GraphConvolution, GraphConvolutionSparse, \
-    InnerProductDecoder
+from gae.tf.sparse.layers_sparse import GraphConvolution, \
+    GraphConvolutionSparse, InnerProductDecoder
 import tensorflow as tf
 
 
