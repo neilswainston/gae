@@ -10,43 +10,17 @@ All rights reserved.
 # pylint: disable=too-many-branches
 # pylint: disable=too-many-statements
 import numpy as np
-import scipy.sparse as sp
 
 
 def preprocess_adj(adj):
     '''Pre-process adjacency.'''
-    adj = sp.coo_matrix(adj)
-
-    adj_ = adj + sp.eye(adj.shape[0])
+    adj_ = adj + np.eye(adj.shape[0])
 
     rowsum = np.array(adj_.sum(1))
 
-    degree_mat_inv_sqrt = sp.diags(np.power(rowsum, -0.5).flatten())
+    degree_mat_inv_sqrt = np.diag(np.power(rowsum, -0.5).flatten())
 
     adj_norm = adj_.dot(degree_mat_inv_sqrt).transpose().dot(
-        degree_mat_inv_sqrt).tocoo()
+        degree_mat_inv_sqrt)
 
-    return sparse_to_tuple(adj_norm)
-
-
-def preprocess_feat(features, use_features):
-    '''Preprocess features.'''
-    if not use_features:
-        features = sp.identity(features.shape[0])  # featureless
-
-    features = sparse_to_tuple(sp.coo_matrix(features))
-    num_features = features[2][1]
-    num_nonzero_feats = features[1].size
-
-    return features, num_features, num_nonzero_feats
-
-
-def sparse_to_tuple(sparse_mx):
-    '''Sparse to tuple.'''
-    if not sp.isspmatrix_coo(sparse_mx):
-        sparse_mx = sp.coo_matrix(sparse_mx)
-
-    coords = np.vstack((sparse_mx.row, sparse_mx.col)).transpose()
-    values = sparse_mx.data
-    shape = sparse_mx.shape
-    return coords, values, shape
+    return adj_norm
