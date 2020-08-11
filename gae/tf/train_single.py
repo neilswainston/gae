@@ -17,12 +17,10 @@ from scipy.special import expit
 from sklearn.metrics import average_precision_score, roc_auc_score
 
 from gae.data import load_data
-from gae.preprocessing_single import preprocess_adj, preprocess_feat, \
-    sparse_to_tuple
+from gae.preprocessing_single import preprocess_adj
 from gae.tf.model import get_model
 from gae.tf.optimizer import get_opt
 import numpy as np
-import scipy.sparse as sp
 import tensorflow as tf
 
 
@@ -30,7 +28,7 @@ import tensorflow as tf
 os.environ['CUDA_VISIBLE_DEVICES'] = ''
 
 
-def train(adj, features, is_ae=True, use_features=True,
+def train(adj, features, is_ae=True,
           epochs=200, dropout=0.0, hidden1=256, hidden2=128,
           learning_rate=0.01):
     '''train.'''
@@ -38,20 +36,16 @@ def train(adj, features, is_ae=True, use_features=True,
     # Adjacency:
     adj_norm = preprocess_adj(adj)
 
-    # Features:
-    features, num_features, num_nonzero_feats = \
-        preprocess_feat(features, use_features)
-
     # Define placeholders:
     placeholders = {
-        'features': tf.compat.v1.sparse_placeholder(tf.float32),
-        'adj': tf.compat.v1.sparse_placeholder(tf.float32),
-        'adj_orig': tf.compat.v1.sparse_placeholder(tf.float32),
+        'features': tf.compat.v1.placeholder(tf.float32),
+        'adj': tf.compat.v1.placeholder(tf.float32),
+        'adj_orig': tf.compat.v1.placeholder(tf.float32),
         'dropout': tf.compat.v1.placeholder_with_default(0., shape=())
     }
 
     # Create model:
-    model = get_model(placeholders, num_features, num_nonzero_feats,
+    model = get_model(placeholders, features.shape[1],
                       hidden1, hidden2, adj.shape[0], is_ae)
 
     # Optimizer:
@@ -65,7 +59,7 @@ def train(adj, features, is_ae=True, use_features=True,
     feed_dict = {
         placeholders['features']: features,
         placeholders['adj']: adj_norm,
-        placeholders['adj_orig']: sparse_to_tuple(adj + sp.eye(adj.shape[0])),
+        placeholders['adj_orig']: adj + np.eye(adj.shape[0]),
         placeholders['dropout']: dropout
     }
 

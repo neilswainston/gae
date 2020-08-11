@@ -19,8 +19,8 @@ from sklearn.metrics import average_precision_score, roc_auc_score
 from gae.data import load_data
 from gae.preprocessing_single_sparse import preprocess_adj, preprocess_feat, \
     sparse_to_tuple
-from gae.tf.optimizer import get_opt
 from gae.tf.sparse.model_sparse import get_model
+from gae.tf.sparse.optimizer_sparse import get_opt
 import numpy as np
 import scipy.sparse as sp
 import tensorflow as tf

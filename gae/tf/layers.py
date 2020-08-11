@@ -66,22 +66,7 @@ class GraphConvolution(Layer):
         '''Call.'''
         x = tf.nn.dropout(inputs, rate=self.dropout)
         x = tf.matmul(x, self.vars['weights'])
-        x = tf.sparse.sparse_dense_matmul(self.adj, x)
-        return self.act(x)
-
-
-class GraphConvolutionSparse(GraphConvolution):
-    '''Graph convolution layer for sparse inputs.'''
-
-    def __init__(self, **kwargs):
-        super(GraphConvolutionSparse, self).__init__(**kwargs)
-        self.num_nonzero_feats = kwargs.get('num_nonzero_feats')
-
-    def _call(self, inputs):
-        '''Call.'''
-        x = _dropout_sparse(inputs, self.dropout, self.num_nonzero_feats)
-        x = tf.sparse.sparse_dense_matmul(x, self.vars['weights'])
-        x = tf.sparse.sparse_dense_matmul(self.adj, x)
+        x = tf.matmul(self.adj, x)
         return self.act(x)
 
 
@@ -95,14 +80,3 @@ class InnerProductDecoder(Layer):
         x = tf.reshape(x, [-1])
         outputs = self.act(x)
         return outputs
-
-
-def _dropout_sparse(x, rate, num_nonzero_elems):
-    '''Dropout for sparse tensors. Currently fails for very large sparse
-    tensors (>1M elements)'''
-    keep_prob = 1 - rate
-    noise_shape = [num_nonzero_elems]
-    random_tensor = keep_prob + tf.random.uniform(noise_shape)
-    dropout_mask = tf.cast(tf.floor(random_tensor), dtype=tf.bool)
-    pre_out = tf.sparse.retain(x, dropout_mask)
-    return pre_out * (1.0 / keep_prob)

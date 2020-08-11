@@ -40,7 +40,7 @@ def _get_data(smiles):
                           atom.GetFormalCharge()]
                          for atom in mol.GetAtoms()])
 
-    return adj, features
+    return scipy.sparse.csr_matrix(adj), scipy.sparse.lil_matrix(features)
 
 
 def main():

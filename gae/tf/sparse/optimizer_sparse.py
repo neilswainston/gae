@@ -22,7 +22,10 @@ def get_opt(model, adj, adj_orig, learning_rate, is_ae):
         float((adj.shape[0] * adj.shape[0] - adj.sum()) * 2)
 
     with tf.name_scope('optimizer'):
-        labels = tf.reshape(adj_orig, [-1])
+        labels = tf.reshape(
+            tf.sparse.to_dense(
+                adj_orig,
+                validate_indices=False), [-1])
 
         if is_ae:
             return OptimizerAE(preds=model.reconstructions,

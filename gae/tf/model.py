@@ -10,12 +10,11 @@ All rights reserved.
 # pylint: disable=too-many-arguments
 # pylint: disable=too-many-instance-attributes
 # pylint: disable=wrong-import-order
-from gae.tf.layers import GraphConvolution, GraphConvolutionSparse, \
-    InnerProductDecoder
+from gae.tf.layers import GraphConvolution, InnerProductDecoder
 import tensorflow as tf
 
 
-def get_model(placeholders, num_features, num_nonzero_feats,
+def get_model(placeholders, num_features,
               hidden1, hidden2, num_nodes, is_ae):
     '''Get model.'''
     if is_ae:
@@ -23,7 +22,6 @@ def get_model(placeholders, num_features, num_nonzero_feats,
                           placeholders['adj'],
                           placeholders['dropout'],
                           num_features,
-                          num_nonzero_feats,
                           hidden1=hidden1,
                           hidden2=hidden2)
     # else:
@@ -32,7 +30,6 @@ def get_model(placeholders, num_features, num_nonzero_feats,
                        placeholders['dropout'],
                        num_features,
                        num_nodes,
-                       num_nonzero_feats,
                        hidden1=hidden1, hidden2=hidden2)
 
 
@@ -70,13 +67,12 @@ class Model():
 class GCNModelAE(Model):
     '''GCN model autoencoder.'''
 
-    def __init__(self, inputs, adj, dropout, num_features, num_nonzero_feats,
+    def __init__(self, inputs, adj, dropout, num_features,
                  hidden1, hidden2, **kwargs):
         super(GCNModelAE, self).__init__(**kwargs)
 
         self.inputs = inputs
         self.input_dim = num_features
-        self.num_nonzero_feats = num_nonzero_feats
         self.adj = adj
         self.dropout = dropout
         self.hidden1 = hidden1
@@ -84,11 +80,10 @@ class GCNModelAE(Model):
         self.build()
 
     def _build(self):
-        hidden_layer1 = GraphConvolutionSparse(
+        hidden_layer1 = GraphConvolution(
             input_dim=self.input_dim,
             output_dim=self.hidden1,
             adj=self.adj,
-            num_nonzero_feats=self.num_nonzero_feats,
             act=tf.nn.relu,
             dropout=self.dropout,
             logging=self.logging)(self.inputs)
@@ -111,12 +106,11 @@ class GCNModelVAE(Model):
     '''GCN model variational autoencoder.'''
 
     def __init__(self, inputs, adj, dropout, num_features, num_nodes,
-                 num_nonzero_feats, hidden1, hidden2, **kwargs):
+                 hidden1, hidden2, **kwargs):
         super(GCNModelVAE, self).__init__(**kwargs)
 
         self.inputs = inputs
         self.input_dim = num_features
-        self.num_nonzero_feats = num_nonzero_feats
         self.n_samples = num_nodes
         self.adj = adj
         self.dropout = dropout
@@ -131,11 +125,10 @@ class GCNModelVAE(Model):
         self.build()
 
     def _build(self):
-        hidden_layer1 = GraphConvolutionSparse(
+        hidden_layer1 = GraphConvolution(
             input_dim=self.input_dim,
             output_dim=self.hidden1,
             adj=self.adj,
-            num_nonzero_feats=self.num_nonzero_feats,
             act=tf.nn.relu,
             dropout=self.dropout,
             logging=self.logging)(self.inputs)
