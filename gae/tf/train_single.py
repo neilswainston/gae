@@ -68,7 +68,8 @@ def train(adj, features, is_ae=True,
                       adj.shape[0], is_ae)
 
     # Optimizer:
-    opt = get_opt(model, adj, placeholders['adj_orig'], learning_rate, is_ae)
+    opt = get_opt(
+        model, adj, placeholders['adj_orig'], 0, learning_rate, is_ae)
 
     # Initialize session:
     sess = tf.compat.v1.Session()
