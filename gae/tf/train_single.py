@@ -51,7 +51,6 @@ def train(adj, features, is_ae=True,
     # Define placeholders:
     placeholders = {
         'adj': tf.compat.v1.placeholder(tf.float32),
-        'adj_orig': tf.compat.v1.placeholder(tf.float32),
         'features': tf.compat.v1.placeholder(tf.float32),
         'dropout': tf.compat.v1.placeholder_with_default(0., shape=())
     }
@@ -68,8 +67,8 @@ def train(adj, features, is_ae=True,
                       adj.shape[0], is_ae)
 
     # Optimizer:
-    opt = get_opt(
-        model, adj, placeholders['adj_orig'], 0, learning_rate, is_ae)
+    adj_orig = (adj + np.eye(adj.shape[0])).astype(np.float32)
+    opt = get_opt(model, adj, adj_orig, 0, learning_rate, is_ae)
 
     # Initialize session:
     sess = tf.compat.v1.Session()
@@ -78,7 +77,6 @@ def train(adj, features, is_ae=True,
     # Construct feed dictionary:
     feed_dict = {
         placeholders['adj']: adj_norm,
-        placeholders['adj_orig']: adj + np.eye(adj.shape[0]),
         placeholders['features']: features.todense(),
         placeholders['dropout']: dropout
     }

@@ -51,7 +51,6 @@ def train(adj, features, is_ae=True,
     # Define placeholders:
     placeholders = {
         'adj': tf.compat.v1.placeholder(tf.float32),
-        'adj_orig': tf.compat.v1.placeholder(tf.float32),
         'features': tf.compat.v1.placeholder(tf.float32),
         'dropout': tf.compat.v1.placeholder_with_default(0., shape=())
     }
@@ -68,8 +67,8 @@ def train(adj, features, is_ae=True,
                       adj.shape[1], is_ae)
 
     # Optimizer:
-    opt = get_opt(
-        model, adj, placeholders['adj_orig'], 1, learning_rate, is_ae)
+    adj_orig = (adj + np.eye(adj.shape[1])).astype(np.float32)
+    opt = get_opt(model, adj, adj_orig, 1, learning_rate, is_ae)
 
     # Initialize session:
     sess = tf.compat.v1.Session()
@@ -79,7 +78,6 @@ def train(adj, features, is_ae=True,
     feed_dict = {
         placeholders['features']: features,
         placeholders['adj']: adj_norm,
-        placeholders['adj_orig']: adj + np.eye(adj.shape[1]),
         placeholders['dropout']: dropout
     }
 
@@ -111,8 +109,6 @@ def train(adj, features, is_ae=True,
 
 def _preprocess_adj(adj):
     '''Pre-process adjacency.'''
-    # adj = sp.coo_matrix(adj)
-
     adj_ = adj + np.eye(adj.shape[1])
 
     rowsum = np.array(adj_.sum(2))
