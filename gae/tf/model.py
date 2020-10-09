@@ -15,22 +15,23 @@ import tensorflow as tf
 
 
 def get_model(placeholders, num_features,
-              hidden1, hidden2, num_nodes, is_ae):
+              num_hidden1, num_hidden2, num_nodes, is_ae):
     '''Get model.'''
     if is_ae:
         return GCNModelAE(placeholders['features'],
                           placeholders['adj'],
                           placeholders['dropout'],
                           num_features,
-                          hidden1=hidden1,
-                          hidden2=hidden2)
+                          num_hidden1=num_hidden1,
+                          num_hidden2=num_hidden2)
     # else:
     return GCNModelVAE(placeholders['features'],
                        placeholders['adj'],
                        placeholders['dropout'],
                        num_features,
                        num_nodes,
-                       hidden1=hidden1, hidden2=hidden2)
+                       num_hidden1=num_hidden1,
+                       num_hidden2=num_hidden2)
 
 
 class Model():
@@ -68,29 +69,29 @@ class GCNModelAE(Model):
     '''GCN model autoencoder.'''
 
     def __init__(self, inputs, adj, dropout, num_features,
-                 hidden1, hidden2, **kwargs):
+                 num_hidden1, num_hidden2, **kwargs):
         super(GCNModelAE, self).__init__(**kwargs)
 
         self.inputs = inputs
         self.input_dim = num_features
         self.adj = adj
         self.dropout = dropout
-        self.hidden1 = hidden1
-        self.hidden2 = hidden2
+        self.num_hidden1 = num_hidden1
+        self.num_hidden2 = num_hidden2
         self.build()
 
     def _build(self):
         hidden_layer1 = GraphConvolution(
             input_dim=self.input_dim,
-            output_dim=self.hidden1,
+            output_dim=self.num_hidden1,
             adj=self.adj,
             act=tf.nn.relu,
             dropout=self.dropout,
             logging=self.logging)(self.inputs)
 
         self.z_mean = GraphConvolution(
-            input_dim=self.hidden1,
-            output_dim=self.hidden2,
+            input_dim=self.num_hidden1,
+            output_dim=self.num_hidden2,
             adj=self.adj,
             act=lambda x: x,
             dropout=self.dropout,
@@ -106,7 +107,7 @@ class GCNModelVAE(Model):
     '''GCN model variational autoencoder.'''
 
     def __init__(self, inputs, adj, dropout, num_features, num_nodes,
-                 hidden1, hidden2, **kwargs):
+                 num_hidden1, num_hidden2, **kwargs):
         super(GCNModelVAE, self).__init__(**kwargs)
 
         self.inputs = inputs
@@ -114,8 +115,8 @@ class GCNModelVAE(Model):
         self.n_samples = num_nodes
         self.adj = adj
         self.dropout = dropout
-        self.hidden1 = hidden1
-        self.hidden2 = hidden2
+        self.num_hidden1 = num_hidden1
+        self.num_hidden2 = num_hidden2
 
         self.hidden_layer1 = None
         self.z = None
@@ -127,23 +128,23 @@ class GCNModelVAE(Model):
     def _build(self):
         hidden_layer1 = GraphConvolution(
             input_dim=self.input_dim,
-            output_dim=self.hidden1,
+            output_dim=self.num_hidden1,
             adj=self.adj,
             act=tf.nn.relu,
             dropout=self.dropout,
             logging=self.logging)(self.inputs)
 
         self.z_mean = GraphConvolution(
-            input_dim=self.hidden1,
-            output_dim=self.hidden2,
+            input_dim=self.num_hidden1,
+            output_dim=self.num_hidden2,
             adj=self.adj,
             act=lambda x: x,
             dropout=self.dropout,
             logging=self.logging)(hidden_layer1)
 
         self.z_log_std = GraphConvolution(
-            input_dim=self.hidden1,
-            output_dim=self.hidden2,
+            input_dim=self.num_hidden1,
+            output_dim=self.num_hidden2,
             adj=self.adj,
             act=lambda x: x,
             dropout=self.dropout,
@@ -151,7 +152,7 @@ class GCNModelVAE(Model):
 
         z = self.z_mean + \
             tf.random.normal(
-                [self.n_samples, self.hidden2]) * tf.exp(self.z_log_std)
+                [self.n_samples, self.num_hidden2]) * tf.exp(self.z_log_std)
 
         self.reconstructions = InnerProductDecoder(
             act=lambda x: x,

@@ -17,7 +17,6 @@ from scipy.special import expit
 from sklearn.metrics import average_precision_score, roc_auc_score
 
 from gae.data import load_data
-from gae.preprocessing_single import preprocess_adj
 from gae.tf.model import get_model
 from gae.tf.optimizer import get_opt
 import numpy as np
@@ -29,24 +28,24 @@ os.environ['CUDA_VISIBLE_DEVICES'] = ''
 
 
 def train(adj, features, is_ae=True,
-          epochs=200, dropout=0.0, hidden1=256, hidden2=128,
+          epochs=200, dropout=0.0, num_hidden1=256, num_hidden2=128,
           learning_rate=0.01):
     '''train.'''
 
     # Adjacency:
-    adj_norm = preprocess_adj(adj)
+    adj_norm = _preprocess_adj(adj)
 
     # Define placeholders:
     placeholders = {
-        'features': tf.compat.v1.placeholder(tf.float32),
         'adj': tf.compat.v1.placeholder(tf.float32),
         'adj_orig': tf.compat.v1.placeholder(tf.float32),
+        'features': tf.compat.v1.placeholder(tf.float32),
         'dropout': tf.compat.v1.placeholder_with_default(0., shape=())
     }
 
     # Create model:
     model = get_model(placeholders, features.shape[1],
-                      hidden1, hidden2, adj.shape[0], is_ae)
+                      num_hidden1, num_hidden2, adj.shape[0], is_ae)
 
     # Optimizer:
     opt = get_opt(model, adj, placeholders['adj_orig'], learning_rate, is_ae)
@@ -57,9 +56,9 @@ def train(adj, features, is_ae=True,
 
     # Construct feed dictionary:
     feed_dict = {
-        placeholders['features']: features.todense(),
         placeholders['adj']: adj_norm,
         placeholders['adj_orig']: adj + np.eye(adj.shape[0]),
+        placeholders['features']: features.todense(),
         placeholders['dropout']: dropout
     }
 
@@ -87,6 +86,20 @@ def train(adj, features, is_ae=True,
 
     print('Test ROC score: ' + str(roc_score))
     print('Test AP score: ' + str(ap_score))
+
+
+def _preprocess_adj(adj):
+    '''Pre-process adjacency.'''
+    adj_ = adj + np.eye(adj.shape[0])
+
+    rowsum = np.array(adj_.sum(1))
+
+    degree_mat_inv_sqrt = np.diag(np.power(rowsum, -0.5).flatten())
+
+    adj_norm = adj_.dot(degree_mat_inv_sqrt).transpose().dot(
+        degree_mat_inv_sqrt)
+
+    return adj_norm
 
 
 def _get_adj_rec(sess, model, feed_dict):
