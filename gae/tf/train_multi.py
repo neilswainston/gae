@@ -16,8 +16,8 @@ import time
 from scipy.special import expit
 from sklearn.metrics import average_precision_score, roc_auc_score
 
-from gae.preprocessing_multi import preprocess_adj, preprocess_feat, \
-    sparse_to_tuple
+from gae.data import load_data
+from gae.tf.layers import Layer
 from gae.tf.model import get_model
 from gae.tf.optimizer import get_opt
 import numpy as np
@@ -28,29 +28,44 @@ import tensorflow as tf
 os.environ['CUDA_VISIBLE_DEVICES'] = ''
 
 
+class InnerProductDecoder(Layer):
+    '''Decoder model layer for link prediction.'''
+
+    def _call(self, inputs):
+        inputs = tf.nn.dropout(inputs, rate=self.dropout)
+        x = tf.transpose(inputs, perm=[0, 2, 1])
+        x = tf.matmul(inputs, x)
+        x = tf.reshape(x, [-1])
+        outputs = self.act(x)
+        return outputs
+
+
 def train(adj, features, is_ae=True,
-          epochs=200, dropout=0.0, hidden1=256, hidden2=128,
+          epochs=200, dropout=0.0, num_hidden1=256, num_hidden2=128,
           learning_rate=0.01):
     '''train.'''
 
     # Adjacency:
-    adj_norm = preprocess_adj(adj)
-
-    # Features:
-    features, num_features, num_nonzero_feats = \
-        preprocess_feat(features)
+    adj_norm = _preprocess_adj(adj)
 
     # Define placeholders:
     placeholders = {
-        'features': tf.compat.v1.sparse_placeholder(tf.float32),
-        'adj': tf.compat.v1.sparse_placeholder(tf.float32),
-        'adj_orig': tf.compat.v1.sparse_placeholder(tf.float32),
+        'adj': tf.compat.v1.placeholder(tf.float32),
+        'adj_orig': tf.compat.v1.placeholder(tf.float32),
+        'features': tf.compat.v1.placeholder(tf.float32),
         'dropout': tf.compat.v1.placeholder_with_default(0., shape=())
     }
 
+    # Get InnerProductDecoder:
+    inner_product_decoder = InnerProductDecoder(
+        act=lambda x: x,
+        dropout=0.0,
+        logging=True)
+
     # Create model:
-    model = get_model(placeholders, num_features, num_nonzero_feats,
-                      hidden1, hidden2, adj.shape[1], is_ae)
+    model = get_model(placeholders, features.shape[2],
+                      num_hidden1, num_hidden2, inner_product_decoder,
+                      adj.shape[1], is_ae)
 
     # Optimizer:
     opt = get_opt(model, adj, placeholders['adj_orig'], learning_rate, is_ae)
@@ -63,7 +78,7 @@ def train(adj, features, is_ae=True,
     feed_dict = {
         placeholders['features']: features,
         placeholders['adj']: adj_norm,
-        placeholders['adj_orig']: sparse_to_tuple(adj + np.eye(adj.shape[1])),
+        placeholders['adj_orig']: adj + np.eye(adj.shape[1]),
         placeholders['dropout']: dropout
     }
 
@@ -93,15 +108,51 @@ def train(adj, features, is_ae=True,
     print('Test AP score: ' + str(ap_score))
 
 
+def _preprocess_adj(adj):
+    '''Pre-process adjacency.'''
+    # adj = sp.coo_matrix(adj)
+
+    adj_ = adj + np.eye(adj.shape[1])
+
+    rowsum = np.array(adj_.sum(2))
+
+    degree_mat_inv_sqrt = np.array([np.diag(array)
+                                    for array in np.power(rowsum, -0.5)])
+
+    adj_norm = np.matmul(
+        np.transpose(
+            np.matmul(adj_, degree_mat_inv_sqrt),
+            axes=(0, 2, 1)),
+        degree_mat_inv_sqrt)
+
+    return adj_norm
+
+
 def _get_adj_rec(sess, model, feed_dict):
     '''Get reconstructed adjacency matrix.'''
     emb = sess.run(model.z_mean, feed_dict=feed_dict)
-    adj_rec = expit(np.dot(emb, emb.T))
+    emb_t = np.transpose(emb, axes=[0, 2, 1])
+    adj_rec = expit(np.einsum('ijk,ikl->ijl', emb, emb_t))
     return (adj_rec + 0.5).astype(np.int)
 
 
 def _get_roc_score(adj, adj_rec):
     '''Get ROC score.'''
-    adj = adj.toarray().flatten()
+    adj = adj.flatten()
     adj_rec = adj_rec.flatten()
     return roc_auc_score(adj, adj_rec), average_precision_score(adj, adj)
+
+
+def main():
+    '''main method.'''
+
+    # Load data:
+    adj, features = load_data('cora')
+
+    # Train:
+    train(np.array([adj.todense()]), np.array([features.todense()]),
+          is_ae=False)
+
+
+if __name__ == '__main__':
+    main()

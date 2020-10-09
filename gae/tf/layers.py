@@ -68,15 +68,3 @@ class GraphConvolution(Layer):
         x = tf.matmul(x, self.vars['weights'])
         x = tf.matmul(self.adj, x)
         return self.act(x)
-
-
-class InnerProductDecoder(Layer):
-    '''Decoder model layer for link prediction.'''
-
-    def _call(self, inputs):
-        inputs = tf.nn.dropout(inputs, rate=self.dropout)
-        x = tf.transpose(inputs)
-        x = tf.matmul(inputs, x)
-        x = tf.reshape(x, [-1])
-        outputs = self.act(x)
-        return outputs

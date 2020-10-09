@@ -17,6 +17,7 @@ from scipy.special import expit
 from sklearn.metrics import average_precision_score, roc_auc_score
 
 from gae.data import load_data
+from gae.tf.layers import Layer
 from gae.tf.model import get_model
 from gae.tf.optimizer import get_opt
 import numpy as np
@@ -25,6 +26,18 @@ import tensorflow as tf
 
 # Train on CPU (hide GPU) due to memory constraints
 os.environ['CUDA_VISIBLE_DEVICES'] = ''
+
+
+class InnerProductDecoder(Layer):
+    '''Decoder model layer for link prediction.'''
+
+    def _call(self, inputs):
+        inputs = tf.nn.dropout(inputs, rate=self.dropout)
+        x = tf.transpose(inputs)
+        x = tf.matmul(inputs, x)
+        x = tf.reshape(x, [-1])
+        outputs = self.act(x)
+        return outputs
 
 
 def train(adj, features, is_ae=True,
@@ -43,9 +56,16 @@ def train(adj, features, is_ae=True,
         'dropout': tf.compat.v1.placeholder_with_default(0., shape=())
     }
 
+    # Get InnerProductDecoder:
+    inner_product_decoder = InnerProductDecoder(
+        act=lambda x: x,
+        dropout=0.0,
+        logging=True)
+
     # Create model:
     model = get_model(placeholders, features.shape[1],
-                      num_hidden1, num_hidden2, adj.shape[0], is_ae)
+                      num_hidden1, num_hidden2, inner_product_decoder,
+                      adj.shape[0], is_ae)
 
     # Optimizer:
     opt = get_opt(model, adj, placeholders['adj_orig'], learning_rate, is_ae)

@@ -10,12 +10,12 @@ All rights reserved.
 # pylint: disable=too-many-arguments
 # pylint: disable=too-many-instance-attributes
 # pylint: disable=wrong-import-order
-from gae.tf.layers import GraphConvolution, InnerProductDecoder
+from gae.tf.layers import GraphConvolution
 import tensorflow as tf
 
 
-def get_model(placeholders, num_features,
-              num_hidden1, num_hidden2, num_nodes, is_ae):
+def get_model(placeholders, num_features, num_hidden1, num_hidden2,
+              inner_product_decoder, num_nodes, is_ae):
     '''Get model.'''
     if is_ae:
         return GCNModelAE(placeholders['features'],
@@ -23,7 +23,8 @@ def get_model(placeholders, num_features,
                           placeholders['dropout'],
                           num_features,
                           num_hidden1=num_hidden1,
-                          num_hidden2=num_hidden2)
+                          num_hidden2=num_hidden2,
+                          inner_product_decoder=inner_product_decoder)
     # else:
     return GCNModelVAE(placeholders['features'],
                        placeholders['adj'],
@@ -31,7 +32,8 @@ def get_model(placeholders, num_features,
                        num_features,
                        num_nodes,
                        num_hidden1=num_hidden1,
-                       num_hidden2=num_hidden2)
+                       num_hidden2=num_hidden2,
+                       inner_product_decoder=inner_product_decoder)
 
 
 class Model():
@@ -69,7 +71,7 @@ class GCNModelAE(Model):
     '''GCN model autoencoder.'''
 
     def __init__(self, inputs, adj, dropout, num_features,
-                 num_hidden1, num_hidden2, **kwargs):
+                 num_hidden1, num_hidden2, inner_product_decoder, **kwargs):
         super(GCNModelAE, self).__init__(**kwargs)
 
         self.inputs = inputs
@@ -78,6 +80,7 @@ class GCNModelAE(Model):
         self.dropout = dropout
         self.num_hidden1 = num_hidden1
         self.num_hidden2 = num_hidden2
+        self.inner_product_decoder = inner_product_decoder
         self.build()
 
     def _build(self):
@@ -97,17 +100,14 @@ class GCNModelAE(Model):
             dropout=self.dropout,
             logging=self.logging)(hidden_layer1)
 
-        self.reconstructions = InnerProductDecoder(
-            act=lambda x: x,
-            dropout=0.0,
-            logging=self.logging)(self.z_mean)
+        self.reconstructions = self.inner_product_decoder(self.z_mean)
 
 
 class GCNModelVAE(Model):
     '''GCN model variational autoencoder.'''
 
     def __init__(self, inputs, adj, dropout, num_features, num_nodes,
-                 num_hidden1, num_hidden2, **kwargs):
+                 num_hidden1, num_hidden2, inner_product_decoder, **kwargs):
         super(GCNModelVAE, self).__init__(**kwargs)
 
         self.inputs = inputs
@@ -117,6 +117,7 @@ class GCNModelVAE(Model):
         self.dropout = dropout
         self.num_hidden1 = num_hidden1
         self.num_hidden2 = num_hidden2
+        self.inner_product_decoder = inner_product_decoder
 
         self.hidden_layer1 = None
         self.z = None
@@ -154,7 +155,4 @@ class GCNModelVAE(Model):
             tf.random.normal(
                 [self.n_samples, self.num_hidden2]) * tf.exp(self.z_log_std)
 
-        self.reconstructions = InnerProductDecoder(
-            act=lambda x: x,
-            dropout=0.0,
-            logging=self.logging)(z)
+        self.reconstructions = self.inner_product_decoder(z)
