@@ -46,12 +46,15 @@ def _get_data(smiles):
 def main():
     '''main method.'''
 
+    from rdkit.Chem.rdMolDescriptors import CalcMolFormula
+    print(CalcMolFormula(Chem.MolFromSmiles('CCO')))
+
     # Load data:
     filename = 'data/spectra.csv'
     adj, features = _load_data(filename)
 
     # Train:
-    train_single.train(adj, features, epochs=10000)
+    train_single.train(adj.toarray(), features, epochs=10000)
 
 
 if __name__ == '__main__':

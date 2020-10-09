@@ -41,7 +41,7 @@ class InnerProductDecoder(Layer):
 
 
 def train(adj, features, is_ae=True,
-          epochs=200, dropout=0.0, num_hidden1=256, num_hidden2=128,
+          epochs=64, dropout=0.0, num_hidden1=256, num_hidden2=128,
           learning_rate=0.01):
     '''train.'''
 
@@ -77,7 +77,7 @@ def train(adj, features, is_ae=True,
     # Construct feed dictionary:
     feed_dict = {
         placeholders['adj']: adj_norm,
-        placeholders['features']: features.todense(),
+        placeholders['features']: features,
         placeholders['dropout']: dropout
     }
 
@@ -130,9 +130,9 @@ def _get_adj_rec(sess, model, feed_dict):
 
 def _get_roc_score(adj, adj_rec):
     '''Get ROC score.'''
-    adj = adj.toarray().flatten()
+    adj = adj.flatten()
     adj_rec = adj_rec.flatten()
-    return roc_auc_score(adj, adj_rec), average_precision_score(adj, adj)
+    return roc_auc_score(adj, adj_rec), average_precision_score(adj, adj_rec)
 
 
 def main():
@@ -142,7 +142,7 @@ def main():
     adj, features = load_data('cora')
 
     # Train:
-    train(adj, features, is_ae=False)
+    train(adj.toarray(), features.todense(), is_ae=False)
 
 
 if __name__ == '__main__':
