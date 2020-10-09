@@ -11,7 +11,6 @@ All rights reserved.
 from rdkit import Chem
 import scipy
 
-
 from gae.tf import train_multi
 import numpy as np
 import pandas as pd
@@ -54,7 +53,6 @@ def _get_entry(smiles):
 
 def main():
     '''main method.'''
-
     # Load data:
     filename = 'data/spectra.csv'
     adj, features = _load_data(filename)

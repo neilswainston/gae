@@ -11,7 +11,6 @@ All rights reserved.
 from rdkit import Chem
 import scipy
 
-
 from gae.tf import train_multi
 import numpy as np
 import pandas as pd
