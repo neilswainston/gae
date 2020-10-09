@@ -57,7 +57,7 @@ def train(adj, features, is_ae=True,
 
     # Construct feed dictionary:
     feed_dict = {
-        placeholders['features']: features,
+        placeholders['features']: features.todense(),
         placeholders['adj']: adj_norm,
         placeholders['adj_orig']: adj + np.eye(adj.shape[0]),
         placeholders['dropout']: dropout
