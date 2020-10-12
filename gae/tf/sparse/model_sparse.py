@@ -15,13 +15,13 @@ from gae.tf.sparse.layers_sparse import GraphConvolution, \
 import tensorflow as tf
 
 
-def get_model(placeholders, num_features, num_nonzero_feats,
+def get_model(placeholders, dropout, num_features, num_nonzero_feats,
               hidden1, hidden2, num_nodes, is_ae):
     '''Get model.'''
     if is_ae:
         return GCNModelAE(placeholders['features'],
                           placeholders['adj'],
-                          placeholders['dropout'],
+                          dropout,
                           num_features,
                           num_nonzero_feats,
                           hidden1=hidden1,
@@ -29,7 +29,7 @@ def get_model(placeholders, num_features, num_nonzero_feats,
     # else:
     return GCNModelVAE(placeholders['features'],
                        placeholders['adj'],
-                       placeholders['dropout'],
+                       dropout,
                        num_features,
                        num_nodes,
                        num_nonzero_feats,

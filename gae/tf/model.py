@@ -14,13 +14,13 @@ from gae.tf.layers import GraphConvolution
 import tensorflow as tf
 
 
-def get_model(placeholders, num_features, num_hidden1, num_hidden2,
+def get_model(placeholders, dropout, num_features, num_hidden1, num_hidden2,
               inner_product_decoder, num_nodes, is_ae):
     '''Get model.'''
     if is_ae:
         return GCNModelAE(placeholders['features'],
                           placeholders['adj'],
-                          placeholders['dropout'],
+                          dropout,
                           num_features,
                           num_hidden1=num_hidden1,
                           num_hidden2=num_hidden2,
@@ -28,7 +28,7 @@ def get_model(placeholders, num_features, num_hidden1, num_hidden2,
     # else:
     return GCNModelVAE(placeholders['features'],
                        placeholders['adj'],
-                       placeholders['dropout'],
+                       dropout,
                        num_features,
                        num_nodes,
                        num_hidden1=num_hidden1,

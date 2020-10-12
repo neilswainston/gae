@@ -52,17 +52,17 @@ def train(adj, features, is_ae=True,
     placeholders = {
         'adj': tf.compat.v1.placeholder(tf.float32),
         'features': tf.compat.v1.placeholder(tf.float32),
-        'dropout': tf.compat.v1.placeholder_with_default(0., shape=())
+        # 'dropout': tf.compat.v1.placeholder_with_default(0., shape=())
     }
 
     # Get InnerProductDecoder:
     inner_product_decoder = InnerProductDecoder(
         act=lambda x: x,
-        dropout=0.0,
+        dropout=dropout,
         logging=True)
 
     # Create model:
-    model = get_model(placeholders, features.shape[2],
+    model = get_model(placeholders, dropout, features.shape[2],
                       num_hidden1, num_hidden2, inner_product_decoder,
                       adj.shape[1], is_ae)
 
@@ -78,7 +78,7 @@ def train(adj, features, is_ae=True,
     feed_dict = {
         placeholders['features']: features,
         placeholders['adj']: adj_norm,
-        placeholders['dropout']: dropout
+        # placeholders['dropout']: dropout
     }
 
     # Train model:

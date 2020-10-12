@@ -21,9 +21,9 @@ def get_opt(model, adj, adj_orig, dim, learning_rate, is_ae):
     norm = adj.shape[dim] * adj.shape[dim] / \
         float((adj.shape[dim] * adj.shape[dim] - adj.sum()) * 2)
 
-    with tf.name_scope('optimizer'):
-        labels = tf.reshape(adj_orig, [-1])
+    labels = tf.reshape(adj_orig, [-1])
 
+    with tf.name_scope('optimizer'):
         if is_ae:
             return OptimizerAE(preds=model.reconstructions,
                                labels=labels,
