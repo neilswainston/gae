@@ -11,6 +11,7 @@ All rights reserved.
 # pylint: disable=too-few-public-methods
 # pylint: disable=too-many-arguments
 # pylint: disable=too-many-instance-attributes
+import numpy as np
 import tensorflow as tf
 
 
@@ -21,7 +22,7 @@ def get_opt(model, adj, adj_orig, dim, learning_rate, is_ae):
     norm = adj.shape[dim] * adj.shape[dim] / \
         float((adj.shape[dim] * adj.shape[dim] - adj.sum()) * 2)
 
-    labels = tf.reshape(adj_orig, [-1])
+    labels = np.reshape(adj_orig, [-1])
 
     with tf.name_scope('optimizer'):
         if is_ae:
@@ -52,11 +53,11 @@ class OptimizerAE():
         self.opt_op = optimizer.minimize(self.cost)
 
         correct_prediction = tf.equal(
-            tf.cast(tf.greater_equal(tf.sigmoid(preds), 0.5), tf.int32),
-            tf.cast(labels, tf.int32))
+            tf.cast(tf.greater_equal(tf.sigmoid(preds), 0.5), np.int32),
+            tf.cast(labels, np.int32))
 
         self.accuracy = tf.reduce_mean(
-            tf.cast(correct_prediction, tf.float32))
+            tf.cast(correct_prediction, np.float32))
 
     def _get_cost(self, norm, preds, labels, pos_weight):
         '''Get cost.'''

@@ -49,13 +49,6 @@ def train(adj, features, is_ae=True,
     # Adjacency:
     adj_norm = _preprocess_adj(adj)
 
-    # Define placeholders:
-    placeholders = {
-        'adj': tf.compat.v1.placeholder(tf.float32),
-        'features': tf.compat.v1.placeholder(tf.float32),
-        # 'dropout': tf.compat.v1.placeholder_with_default(0., shape=())
-    }
-
     # Get InnerProductDecoder:
     inner_product_decoder = InnerProductDecoder(
         act=lambda x: x,
@@ -63,7 +56,7 @@ def train(adj, features, is_ae=True,
         logging=True)
 
     # Create model:
-    model = get_model(placeholders, dropout, features.shape[1],
+    model = get_model(adj_norm, features, dropout, features.shape[1],
                       num_hidden1, num_hidden2, inner_product_decoder,
                       adj.shape[0], is_ae)
 
@@ -75,21 +68,18 @@ def train(adj, features, is_ae=True,
     sess = tf.compat.v1.Session()
     sess.run(tf.compat.v1.global_variables_initializer())
 
-    # Construct feed dictionary:
-    feed_dict = {
-        placeholders['adj']: adj_norm,
-        placeholders['features']: features,
-        # placeholders['dropout']: dropout
-    }
-
     # Train model:
     for epoch in range(epochs):
         t = time.time()
 
+        with sess.as_default():
+            print(model.hidden_layer1.shape,
+                  model.hidden_layer1.eval().sum(),
+                  adj.sum())
+
         # Run single weight update:
         _, avg_cost, avg_accuracy = sess.run(
-            [opt.opt_op, opt.cost, opt.accuracy],
-            feed_dict=feed_dict)
+            [opt.opt_op, opt.cost, opt.accuracy])
 
         # roc_curr, ap_curr = get_roc_score(
         #    adj_orig, val_edges, val_edges_false, adj_rec)
@@ -101,7 +91,7 @@ def train(adj, features, is_ae=True,
               # 'val_ap=', '{:.5f}'.format(ap_curr),
               'time=', '{:.5f}'.format(time.time() - t))
 
-    adj_rec = _get_adj_rec(sess, model, feed_dict)
+    adj_rec = _get_adj_rec(sess, model)
     roc_score, ap_score = _get_roc_score(adj, adj_rec)
 
     print('Test ROC score: ' + str(roc_score))
@@ -119,12 +109,12 @@ def _preprocess_adj(adj):
     adj_norm = adj_.dot(degree_mat_inv_sqrt).transpose().dot(
         degree_mat_inv_sqrt)
 
-    return adj_norm
+    return adj_norm.astype(np.float32)
 
 
-def _get_adj_rec(sess, model, feed_dict):
+def _get_adj_rec(sess, model):
     '''Get reconstructed adjacency matrix.'''
-    emb = sess.run(model.z_mean, feed_dict=feed_dict)
+    emb = sess.run(model.z_mean)
     adj_rec = expit(np.dot(emb, emb.T))
     return (adj_rec + 0.5).astype(np.int)
 
@@ -143,7 +133,7 @@ def main():
     adj, features = load_data('cora')
 
     # Train:
-    train(adj.toarray(), features.todense(), is_ae=False)
+    train(adj.toarray(), features.toarray(), is_ae=False)
 
 
 if __name__ == '__main__':

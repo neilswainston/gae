@@ -14,20 +14,20 @@ from gae.tf.layers import GraphConvolution
 import tensorflow as tf
 
 
-def get_model(placeholders, dropout, num_features, num_hidden1, num_hidden2,
+def get_model(adj, features, dropout, num_features, num_hidden1, num_hidden2,
               inner_product_decoder, num_nodes, is_ae):
     '''Get model.'''
     if is_ae:
-        return GCNModelAE(placeholders['features'],
-                          placeholders['adj'],
+        return GCNModelAE(features,
+                          adj,
                           dropout,
                           num_features,
                           num_hidden1=num_hidden1,
                           num_hidden2=num_hidden2,
                           inner_product_decoder=inner_product_decoder)
     # else:
-    return GCNModelVAE(placeholders['features'],
-                       placeholders['adj'],
+    return GCNModelVAE(features,
+                       adj,
                        dropout,
                        num_features,
                        num_nodes,
@@ -81,10 +81,11 @@ class GCNModelAE(Model):
         self.num_hidden1 = num_hidden1
         self.num_hidden2 = num_hidden2
         self.inner_product_decoder = inner_product_decoder
+        self.hidden_layer1 = None
         self.build()
 
     def _build(self):
-        hidden_layer1 = GraphConvolution(
+        self.hidden_layer1 = GraphConvolution(
             input_dim=self.input_dim,
             output_dim=self.num_hidden1,
             adj=self.adj,
@@ -98,7 +99,7 @@ class GCNModelAE(Model):
             adj=self.adj,
             act=lambda x: x,
             dropout=self.dropout,
-            logging=self.logging)(hidden_layer1)
+            logging=self.logging)(self.hidden_layer1)
 
         self.reconstructions = self.inner_product_decoder(self.z_mean)
 
@@ -127,7 +128,7 @@ class GCNModelVAE(Model):
         self.build()
 
     def _build(self):
-        hidden_layer1 = GraphConvolution(
+        self.hidden_layer1 = GraphConvolution(
             input_dim=self.input_dim,
             output_dim=self.num_hidden1,
             adj=self.adj,
@@ -141,7 +142,7 @@ class GCNModelVAE(Model):
             adj=self.adj,
             act=lambda x: x,
             dropout=self.dropout,
-            logging=self.logging)(hidden_layer1)
+            logging=self.logging)(self.hidden_layer1)
 
         self.z_log_std = GraphConvolution(
             input_dim=self.num_hidden1,
@@ -149,7 +150,7 @@ class GCNModelVAE(Model):
             adj=self.adj,
             act=lambda x: x,
             dropout=self.dropout,
-            logging=self.logging)(hidden_layer1)
+            logging=self.logging)(self.hidden_layer1)
 
         z = self.z_mean + \
             tf.random.normal(

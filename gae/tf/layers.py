@@ -13,7 +13,7 @@ All rights reserved.
 # pylint: disable=wrong-import-order
 import uuid
 
-from gae.tf.initializations import weight_variable_glorot
+import numpy as np
 import tensorflow as tf
 
 
@@ -55,7 +55,7 @@ class GraphConvolution(Layer):
         super(GraphConvolution, self).__init__(**kwargs)
 
         with tf.compat.v1.variable_scope(self.name + '_vars'):
-            self.vars['weights'] = weight_variable_glorot(
+            self.vars['weights'] = _weight_variable_glorot(
                 kwargs.get('input_dim'),
                 kwargs.get('output_dim'),
                 name='weights')
@@ -68,3 +68,14 @@ class GraphConvolution(Layer):
         x = tf.matmul(x, self.vars['weights'])
         x = tf.matmul(self.adj, x)
         return self.act(x)
+
+
+def _weight_variable_glorot(input_dim, output_dim, name=''):
+    '''Create a weight variable with Glorot & Bengio (AISTATS 2010)
+    initialization.'''
+    init_range = np.sqrt(6.0 / (input_dim + output_dim))
+
+    initial = tf.random.uniform([input_dim, output_dim], minval=-init_range,
+                                maxval=init_range)
+
+    return tf.Variable(initial, name=name)
