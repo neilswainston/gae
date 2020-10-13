@@ -11,8 +11,6 @@ All rights reserved.
 # pylint: disable=too-few-public-methods
 # pylint: disable=too-many-arguments
 # pylint: disable=wrong-import-order
-import uuid
-
 import numpy as np
 import tensorflow as tf
 
@@ -31,7 +29,7 @@ class Layer():
 
     def __init__(self, **kwargs):
         layer = self.__class__.__name__.lower()
-        self.name = kwargs.get('name', layer + '_' + str(uuid.uuid4()))
+        self.name = kwargs.get('name')
 
         self.act = kwargs.get('act')
         self.dropout = kwargs.get('dropout')

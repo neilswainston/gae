@@ -91,7 +91,8 @@ class GCNModelAE(Model):
             adj=self.adj,
             act=tf.nn.relu,
             dropout=self.dropout,
-            logging=self.logging)(self.inputs)
+            logging=self.logging,
+            name='hidden_layer1')(self.inputs)
 
         self.z_mean = GraphConvolution(
             input_dim=self.num_hidden1,
@@ -99,7 +100,8 @@ class GCNModelAE(Model):
             adj=self.adj,
             act=lambda x: x,
             dropout=self.dropout,
-            logging=self.logging)(self.hidden_layer1)
+            logging=self.logging,
+            name='z_mean')(self.hidden_layer1)
 
         self.reconstructions = self.inner_product_decoder(self.z_mean)
 
@@ -134,7 +136,8 @@ class GCNModelVAE(Model):
             adj=self.adj,
             act=tf.nn.relu,
             dropout=self.dropout,
-            logging=self.logging)(self.inputs)
+            logging=self.logging,
+            name='hidden_layer1')(self.inputs)
 
         self.z_mean = GraphConvolution(
             input_dim=self.num_hidden1,
@@ -142,7 +145,8 @@ class GCNModelVAE(Model):
             adj=self.adj,
             act=lambda x: x,
             dropout=self.dropout,
-            logging=self.logging)(self.hidden_layer1)
+            logging=self.logging,
+            name='z_mean')(self.hidden_layer1)
 
         self.z_log_std = GraphConvolution(
             input_dim=self.num_hidden1,
@@ -150,7 +154,8 @@ class GCNModelVAE(Model):
             adj=self.adj,
             act=lambda x: x,
             dropout=self.dropout,
-            logging=self.logging)(self.hidden_layer1)
+            logging=self.logging,
+            name='z_log_std')(self.hidden_layer1)
 
         z = self.z_mean + \
             tf.random.normal(
