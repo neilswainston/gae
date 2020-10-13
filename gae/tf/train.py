@@ -27,9 +27,9 @@ os.environ['CUDA_VISIBLE_DEVICES'] = ''
 
 
 def train(preprocess_adj, inner_product_decoder, get_adj_rec,
-          adj, features, is_ae=True,
-          epochs=64, dropout=0.0, num_hidden1=256, num_hidden2=128,
-          learning_rate=0.01):
+          adj, features, is_ae,
+          epochs, dropout, num_hidden1, num_hidden2,
+          learning_rate):
     '''train.'''
 
     # Adjacency:

@@ -54,9 +54,10 @@ class OptimizerAE():
 
         self.opt_op = optimizer.minimize(self.cost)
 
-        correct_prediction = tf.equal(
-            tf.cast(tf.greater_equal(tf.sigmoid(preds), 0.5), np.int32),
-            tf.cast(labels, np.int32))
+        self.preds = tf.cast(tf.greater_equal(
+            tf.sigmoid(preds), 0.5), np.int32)
+
+        correct_prediction = tf.equal(self.preds, tf.cast(labels, np.int32))
 
         self.accuracy = tf.reduce_mean(
             tf.cast(correct_prediction, np.float32))

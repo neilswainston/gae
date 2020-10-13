@@ -38,6 +38,17 @@ class InnerProductDecoder(Layer):
         return outputs
 
 
+def do_train(adj, features, is_ae,
+             epochs=64, dropout=0.0, num_hidden1=256, num_hidden2=128,
+             learning_rate=0.01):
+    '''Train.'''
+    train(_preprocess_adj, InnerProductDecoder, _get_adj_rec,
+          adj, features, is_ae,
+          epochs=epochs, dropout=dropout,
+          num_hidden1=num_hidden1, num_hidden2=num_hidden2,
+          learning_rate=learning_rate)
+
+
 def _preprocess_adj(adj):
     '''Pre-process adjacency.'''
     adj_ = adj + np.eye(adj.shape[0])
@@ -66,8 +77,7 @@ def main():
     adj, features = load_data('cora')
 
     # Train:
-    train(_preprocess_adj, InnerProductDecoder, _get_adj_rec,
-          adj.toarray(), features.toarray(), is_ae=False)
+    do_train(adj.toarray(), features.toarray(), is_ae=False)
 
 
 if __name__ == '__main__':
