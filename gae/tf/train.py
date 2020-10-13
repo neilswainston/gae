@@ -47,8 +47,7 @@ def train(preprocess_adj, inner_product_decoder, get_adj_rec,
                       adj.shape[-2], is_ae)
 
     # Optimizer:
-    adj_orig = (adj + np.eye(adj.shape[-2])).astype(np.float32)
-    opt = get_opt(model, adj, adj_orig, 0, learning_rate, is_ae)
+    opt = get_opt(model, adj.astype(np.float32), learning_rate, is_ae)
 
     # Initialize session:
     sess = tf.compat.v1.Session()

@@ -15,12 +15,14 @@ import numpy as np
 import tensorflow as tf
 
 
-def get_opt(model, adj, adj_orig, dim, learning_rate, is_ae):
+def get_opt(model, adj_orig, learning_rate, is_ae):
     '''Get optimiser.'''
-    pos_weight = float(adj.shape[dim] * adj.shape[dim] - adj.sum()) / adj.sum()
+    pos_weight = float(
+        adj_orig.shape[-2] * adj_orig.shape[-2] - adj_orig.sum()) / \
+        adj_orig.sum()
 
-    norm = adj.shape[dim] * adj.shape[dim] / \
-        float((adj.shape[dim] * adj.shape[dim] - adj.sum()) * 2)
+    norm = adj_orig.shape[-2] * adj_orig.shape[-2] / \
+        float((adj_orig.shape[-2] * adj_orig.shape[-2] - adj_orig.sum()) * 2)
 
     labels = np.reshape(adj_orig, [-1])
 
@@ -35,7 +37,7 @@ def get_opt(model, adj, adj_orig, dim, learning_rate, is_ae):
         return OptimizerVAE(preds=model.reconstructions,
                             labels=labels,
                             model=model,
-                            num_nodes=adj.shape[0],
+                            num_nodes=adj_orig.shape[-2],
                             pos_weight=pos_weight,
                             norm=norm,
                             learning_rate=learning_rate)
