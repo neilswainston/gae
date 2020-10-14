@@ -26,7 +26,7 @@ def _load_data(filename):
 
 def _get_data(smiles):
     '''Get data from SMILES.'''
-    mol = Chem.MolFromSmiles(smiles)
+    mol = Chem.MolFromSmiles('CCO')
 
     adj = scipy.sparse.lil_matrix(
         (mol.GetNumAtoms(), mol.GetNumAtoms()), dtype=int)
@@ -36,9 +36,11 @@ def _get_data(smiles):
 
     features = np.array([[atom.GetAtomicNum(),
                           atom.GetMass(),
-                          atom.GetExplicitValence(),
-                          atom.GetFormalCharge()]
+                          atom.GetExplicitValence()]
                          for atom in mol.GetAtoms()], dtype=np.float32)
+
+    # Normalise:
+    features /= features.sum(axis=0)
 
     return adj, features
 
@@ -51,7 +53,7 @@ def main():
     adj, features = _load_data(filename)
 
     # Train:
-    train_single.do_train(adj.toarray(), features, is_ae=False, epochs=256)
+    train_single.do_train(adj.toarray(), features, is_ae=False, epochs=10000)
 
 
 if __name__ == '__main__':
